@@ -8,10 +8,10 @@ from tqdm import tqdm
 from model import Vanilla_Gan
 
 # Define Global params
-tf.app.flags.DEFINE_integer('epochs', 256, 'Number of epochs to run')
+tf.app.flags.DEFINE_integer('epochs', 200, 'Number of epochs to run')
 tf.app.flags.DEFINE_integer('step_per_checkpoints', 100, 'Number of steps to save')
 tf.app.flags.DEFINE_integer('batch_size', 64, 'Size of batch')
-tf.app.flags.DEFINE_float('learning_rate', 0.001, 'Learning rate')
+tf.app.flags.DEFINE_float('learning_rate', 0.0002, 'Learning rate')
 
 tf.app.flags.DEFINE_string('model_dir', 'model/', 'Model path')
 tf.app.flags.DEFINE_string('checkpoint_filename', 'vanilla_gan.ckpt', 'Checkpoint filename')
@@ -33,7 +33,6 @@ def load_data():
 
     # [batch, 96, 96, 3]
     images = np.array(images)
-    print(images.shape)
     return images
 
 def create_batches(data):
@@ -47,7 +46,9 @@ def create_batches(data):
             break
         batches.append(data[i: i + FLAGS.batch_size])
 
-    return np.array(batches)
+    batches = (np.array(batches) - 127.0) / 128.0
+    print(np.amax(batches), np.amin(batches))
+    return batches
 
 def main():
     # load raw image data
@@ -83,13 +84,12 @@ def main():
             # loop through all the batches
             for batch in tqdm(batches):
                 # returns at least loss and summary
-                print(batch.shape)
-
                 # get the gaussian noise distribution
                 z_batch = np.random.normal(-1, 1, size=[FLAGS.batch_size, 100])
 
                 # Update the discriminator
                 _, dLoss = sess.run([model.trainerD, model.d_loss], feed_dict={model.Z: z_batch, model.X: batch})
+
                 # Update the generator
                 _, gLoss = sess.run([model.trainerG, model.g_loss], feed_dict={model.Z: z_batch})
 
@@ -97,7 +97,7 @@ def main():
 
                 # save when the step counter % step_per_checkpoint == 0
                 if step_count % FLAGS.step_per_checkpoints == 0:
-                    #summary_writer.add_summary(summary, step_count)
+                    # summary_writer.add_summary(summary, step_count)
                     print(str(step_count) + "\n")
                     print("Discriminator Loss:  {:.4f} .......... \n".format(dLoss))
                     print("Generator Loss:  {:.4f} .......... \n".format(gLoss))
