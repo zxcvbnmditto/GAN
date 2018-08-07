@@ -45,7 +45,7 @@ def main():
 
         outputs = np.array(outputs)
         outputs = np.squeeze(outputs)
-        print((outputs + 1) * 127 )
+        print(outputs)
         print(outputs.shape)
 
         imgs = []
