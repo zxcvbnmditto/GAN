@@ -1,11 +1,12 @@
 import tensorflow as tf
 
-class WGAN():
+class WGAN_GP():
     def __init__(self, learning_rate, batch_size, latent_size):
         print("Constructing WGAN model ........")
         self.learning_rate = learning_rate
         self.batch_size = batch_size
         self.latent_size = latent_size
+        self.Lambda = 10
         self.X = tf.placeholder(tf.float32, shape=[None, 64, 64, 3])
         self.Z = tf.placeholder(tf.float32, shape=[None, self.latent_size])
 
@@ -130,23 +131,32 @@ class WGAN():
         # discriminator => back propagate of the combined performance of distinguishing real and fake images
         self.d_real = tf.reduce_mean(self.Dx)
         self.d_fake = tf.reduce_mean(self.DG)
-        self.d_loss = self.d_fake - self.d_real
+
+        # create a distribution for gradient penalty
+        penalty_dist = tf.random_uniform(shape=[self.batch_size, 1], minval=0, maxval=1)
+
+        # Get gradient_penalty
+        differences = self.Gz - self.X
+        interpolates = self.X + penalty_dist * differences
+        grads = tf.gradients(self.discriminator(interpolates, reuse=True), [interpolates])[0]
+        slopes = tf.sqrt(tf.reduce_sum(tf.square(grads), reduction_indices=[1]))
+        gradient_penalty = tf.reduce_mean((slopes - 1) ** 2)
+
+        # GRADIENT PENALTY can be viewed as a sort of regularization
+
+        self.d_loss = self.d_fake - self.d_real + self.Lambda * gradient_penalty
 
         d_vars = [var for var in tf.trainable_variables() if 'd_' in var.name]
         g_vars = [var for var in tf.trainable_variables() if 'g_' in var.name]
-
-        self.d_clip = [v.assign(tf.clip_by_value(v, -0.01, 0.01)) for v in d_vars]
 
         with tf.variable_scope(tf.get_variable_scope(), reuse=False) as scope:
             print("reuse or not: {}".format(tf.get_variable_scope().reuse))
             assert tf.get_variable_scope().reuse == False, "Houston tengo un problem"
 
-            # RMSProp ascent d_loss
-            self.trainerD = tf.train.RMSPropOptimizer(learning_rate=self.learning_rate).minimize(
+            self.trainerD = tf.train.AdamOptimizer(learning_rate=self.learning_rate, beta1=0.5, beta2=0.999).minimize(
                 self.d_loss, var_list=d_vars)
 
-            # RMSProp descent g_loss
-            self.trainerG = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(
+            self.trainerG = tf.train.AdamOptimizer(learning_rate=self.learning_rate, beta1=0.5, beta2=0.999).minimize(
                 self.g_loss, var_list=g_vars)
 
         self.saver = tf.train.Saver(tf.global_variables())

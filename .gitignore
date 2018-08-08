@@ -9,3 +9,5 @@
 *wgan/models/
 *wgan/logs/
 resize.py
+*wgan-gp/models/
+*wgan-gp/logs/
