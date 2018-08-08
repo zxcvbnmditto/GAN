@@ -2,7 +2,10 @@
 *faces/
 *__pycache__/
 *.idea/
-*model/
-*logs/
+*vanilla_gan/model/
+*vanilla_gan/logs/
 *backup/
 *keras/models/
+*wgan/models/
+*wgan/logs/
+resize.py

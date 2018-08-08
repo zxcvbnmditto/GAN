@@ -5,14 +5,15 @@ import tensorflow as tf
 
 from skimage import io
 from tqdm import tqdm
-from model import Vanilla_Gan
+from wgan.wgan import WGAN
 from PIL import Image
 
 # Define Global params
 tf.app.flags.DEFINE_integer('batch_size', 64, 'Size of batch')
+tf.app.flags.DEFINE_integer('latent_size', 100, 'Size of latent')
 tf.app.flags.DEFINE_float('learning_rate', 0.001, 'Learning rate')
 
-tf.app.flags.DEFINE_string('model_dir', 'model/', 'Model path')
+tf.app.flags.DEFINE_string('model_dir', 'wgan/models/', 'Model path')
 
 
 FLAGS = tf.app.flags.FLAGS
@@ -22,9 +23,10 @@ data_dir = 'faces/'
 def main():
     with tf.Session() as sess:
         # define model here
-        model = Vanilla_Gan(
+        model = WGAN(
             learning_rate=FLAGS.learning_rate,
-            batch_size=FLAGS.batch_size
+            batch_size=FLAGS.batch_size,
+            latent_size=FLAGS.latent_size
         )
 
         # load old model or not
@@ -50,8 +52,7 @@ def main():
 
         imgs = []
         for output in outputs:
-            img = Image.fromarray( (output + 1) * 127 , 'RGB')
-            # img.show()
+            img = Image.fromarray((output + 1) * 127, 'RGB')
             imgs.append(img)
 
         imgs[0].show()

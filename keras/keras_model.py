@@ -18,8 +18,8 @@ tf.app.flags.DEFINE_integer('batch_size', 64, 'Size of batch')
 tf.app.flags.DEFINE_integer('latent_size', 100, 'Size of Latent')
 tf.app.flags.DEFINE_integer('model_num', 11, 'Number of old model to load')
 
-tf.app.flags.DEFINE_bool('load', False, 'Load old model or not')
-tf.app.flags.DEFINE_bool('train', False, 'Train model or not')
+tf.app.flags.DEFINE_bool('load', True, 'Load old model or not')
+tf.app.flags.DEFINE_bool('train', True, 'Train model or not')
 
 tf.app.flags.DEFINE_float('learning_rate', 0.0002, 'Learning rate')
 
@@ -86,7 +86,7 @@ class Vanilla_Gan():
         input = Input(shape=in_shape)
         output = model(input)
 
-        # model.summary()
+        model.summary()
 
         return Model(inputs=input, outputs=output)
 
@@ -110,7 +110,7 @@ class Vanilla_Gan():
         input = Input(shape=in_shape)
         output = model(input)
 
-        # model.summary()
+        model.summary()
 
         return Model(inputs=input, outputs=output)
 
@@ -208,6 +208,7 @@ class Vanilla_Gan():
 
 if __name__ == "__main__":
     gan = Vanilla_Gan(FLAGS.learning_rate, FLAGS.batch_size, FLAGS.latent_size)
+
     if FLAGS.train:
         gan.train()
     else:

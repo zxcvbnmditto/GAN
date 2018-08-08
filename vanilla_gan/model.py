@@ -2,12 +2,13 @@ import tensorflow as tf
 
 
 class Vanilla_Gan():
-    def __init__(self, learning_rate, batch_size):
+    def __init__(self, learning_rate, batch_size, latent_size):
         print("Constructing VANILLA GAN model ........")
         self.learning_rate = learning_rate
         self.batch_size = batch_size
+        self.latent_size = latent_size
         self.X = tf.placeholder(tf.float32, shape=[None, 96, 96, 3])
-        self.Z = tf.placeholder(tf.float32, shape=[None, 100])
+        self.Z = tf.placeholder(tf.float32, shape=[None, self.latent_size])
 
         self.build()
 
@@ -80,7 +81,8 @@ class Vanilla_Gan():
                 scope.reuse_variables()
 
             # Dense layer 1
-            w1 = tf.get_variable('g_w1', [100, 768 * 6 * 6], initializer=tf.truncated_normal_initializer(stddev=0.02))
+            w1 = tf.get_variable('g_w1', [self.latent_size, 768 * 6 * 6], initializer=tf.truncated_normal_initializer(
+                stddev=0.02))
             b1 = tf.get_variable('g_b1', [1], initializer=tf.constant_initializer(0))
 
             dense1 = tf.nn.relu(tf.matmul(x, w1) + b1)
