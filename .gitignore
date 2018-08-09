@@ -11,3 +11,4 @@
 resize.py
 *wgan-gp/models/
 *wgan-gp/logs/
+*wgan-gp/sample_img
