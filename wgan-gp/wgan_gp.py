@@ -30,39 +30,33 @@ class WGAN_GP():
             if (reuse):
                 scope.reuse_variables()
 
-            # 256 - 128 - 64 - 32 - 3
-            #  64 - 32  - 16 -  8 - 4
-
             # Conv layer 1
-            w1 = tf.get_variable('d_w1', [4, 4, 3, 64], initializer=tf.truncated_normal_initializer(stddev=0.02))
+            w1 = tf.get_variable('d_w1', [5, 5, 3, 64], initializer=tf.truncated_normal_initializer(stddev=0.02))
             b1 = tf.get_variable('d_b1', [64], initializer=tf.constant_initializer(0))
-            conv_1 = tf.nn.leaky_relu(self.conv2d(x, w1) + b1, alpha=0.2)
+            conv_1 = self.conv2d(x, w1) + b1
+            conv_1 = tf.nn.leaky_relu(conv_1, alpha=0.2)
             conv_1 = tf.contrib.layers.layer_norm(conv_1, scope='d_ln1')
 
-            # pool_1 = self.pooling(conv_1)
-
             # Conv layer 2
-            w2 = tf.get_variable('d_w2', [4, 4, 64, 128], initializer=tf.truncated_normal_initializer(stddev=0.02))
+            w2 = tf.get_variable('d_w2', [5, 5, 64, 128], initializer=tf.truncated_normal_initializer(stddev=0.02))
             b2 = tf.get_variable('d_b2', [128], initializer=tf.constant_initializer(0))
-            conv_2 = tf.nn.leaky_relu(self.conv2d(conv_1, w2) + b2, alpha=0.2)
+            conv_2 = self.conv2d(conv_1, w2) + b2
+            conv_2 = tf.nn.leaky_relu(conv_2, alpha=0.2)
             conv_2 = tf.contrib.layers.layer_norm(conv_2, scope='d_ln2')
 
-            # pool_2 = self.pooling(conv_2)
-
             # Conv layer 3
-            w3 = tf.get_variable('d_w3', [4, 4, 128, 256], initializer=tf.truncated_normal_initializer(stddev=0.02))
+            w3 = tf.get_variable('d_w3', [5, 5, 128, 256], initializer=tf.truncated_normal_initializer(stddev=0.02))
             b3 = tf.get_variable('d_b3', [256], initializer=tf.constant_initializer(0))
-            conv_3 = tf.nn.leaky_relu(self.conv2d(conv_2, w3) + b3, alpha=0.2)
+            conv_3 = self.conv2d(conv_2, w3) + b3
+            conv_3 = tf.nn.leaky_relu(conv_3, alpha=0.2)
             conv_3 = tf.contrib.layers.layer_norm(conv_3, scope='d_ln3')
 
-            # pool_3 = self.pooling(conv_3)
-
             # Conv layer 4
-            w4 = tf.get_variable('d_w4', [4, 4, 256, 512], initializer=tf.truncated_normal_initializer(stddev=0.02))
+            w4 = tf.get_variable('d_w4', [5, 5, 256, 512], initializer=tf.truncated_normal_initializer(stddev=0.02))
             b4 = tf.get_variable('d_b4', [512], initializer=tf.constant_initializer(0))
-            conv_4 = tf.nn.leaky_relu(self.conv2d(conv_3, w4) + b4, alpha=0.2)
+            conv_4 = self.conv2d(conv_3, w4) + b4
+            conv_4 = tf.nn.leaky_relu(conv_4, alpha=0.2)
             conv_4 = tf.contrib.layers.layer_norm(conv_4, scope='d_ln4')
-            # pool_4 = self.pooling(conv_4)
 
             flatten = tf.reshape(conv_4, [self.batch_size, 4 * 4 * 512])
 
@@ -77,6 +71,18 @@ class WGAN_GP():
 
     def generator(self, x, reuse=False, training=True):
         print("Generator ...........")
+
+        def reset_batch(size):
+            is_train = True
+
+            if size == 256:
+                is_train = False
+
+            return size, is_train
+
+        self.batch_size, training = tf.cond(tf.equal(self.training, tf.constant(False)), lambda: reset_batch(256),
+                                  lambda: reset_batch(64))
+
         with tf.variable_scope('generator') as scope:
             if (reuse):
                 scope.reuse_variables()
@@ -85,54 +91,51 @@ class WGAN_GP():
             w1 = tf.get_variable('g_w1', [self.latent_size, 512 * 4 * 4], initializer=tf.random_normal_initializer(
                 stddev=0.02))
             b1 = tf.get_variable('g_b1', [512 * 4 * 4], initializer=tf.constant_initializer(0))
-            dense1 = tf.nn.relu(tf.matmul(x, w1) + b1)
+            dense1 = tf.nn.leaky_relu(tf.matmul(x, w1) + b1)
             dense1 = tf.reshape(dense1, [self.batch_size, 4, 4, 512])
             dense1 = tf.contrib.layers.batch_norm(dense1, scope='g_bn1', decay=0.9, epsilon=1e-5, scale=True,
                                                   is_training=training)
-            # 256 - 128 - 64 - 32 - 3
-            #  64 - 32  - 16 -  8 - 4
 
             # Deconv layer 1
             o_shape1 = [self.batch_size, 8, 8, 256]
-            w2 = tf.get_variable('g_w2', [4, 4, 256, 512], initializer=tf.random_normal_initializer(
-                stddev=0.01))
+            w2 = tf.get_variable('g_w2', [5, 5, 256, 512], initializer=tf.random_normal_initializer(
+                stddev=0.02))
             b2 = tf.get_variable('g_b2', [256], initializer=tf.constant_initializer(0.1))
             deconv1 = self.deconv2d(dense1, w2, o_shape1) + b2
-            deconv1 = tf.nn.relu(deconv1)
+            deconv1 = tf.nn.leaky_relu(deconv1)
             deconv1 = tf.contrib.layers.batch_norm(deconv1, scope='g_bn2', decay=0.9, epsilon=1e-5, scale=True,
                                                    is_training=training)
 
-
             # Deconv layer 2
             o_shape2 = [self.batch_size, 16, 16, 128]
-            w3 = tf.get_variable('g_w3', [4, 4, 128, 256], initializer=tf.random_normal_initializer(
-                stddev=0.01))
+            w3 = tf.get_variable('g_w3', [5, 5, 128, 256], initializer=tf.random_normal_initializer(
+                stddev=0.02))
             b3 = tf.get_variable('g_b3', [128], initializer=tf.constant_initializer(0.1))
             deconv2 = self.deconv2d(deconv1, w3, o_shape2) + b3
-            deconv2 = tf.nn.relu(deconv2)
+            deconv2 = tf.nn.leaky_relu(deconv2)
             deconv2 = tf.contrib.layers.batch_norm(deconv2, scope='g_bn3', decay=0.9, epsilon=1e-5, scale=True,
                                                    is_training=training)
 
-
             # Deconv layer 3
             o_shape3 = [self.batch_size, 32, 32, 64]
-            w4 = tf.get_variable('g_w4', [4, 4, 64, 128], initializer=tf.random_normal_initializer(
-                stddev=0.01))
+            w4 = tf.get_variable('g_w4', [5, 5, 64, 128], initializer=tf.random_normal_initializer(
+                stddev=0.02))
             b4 = tf.get_variable('g_b4', [64], initializer=tf.constant_initializer(0.1))
             deconv3 = self.deconv2d(deconv2, w4, o_shape3) + b4
-            deconv3 = tf.nn.relu(deconv3)
+            deconv3 = tf.nn.leaky_relu(deconv3)
             deconv3 = tf.contrib.layers.batch_norm(deconv3, scope='g_bn4', decay=0.9, epsilon=1e-5, scale=True,
                                                    is_training=training)
 
-
             # Deconv layer 4
             o_shape4 = [self.batch_size, 64, 64, 3]
-            w5 = tf.get_variable('g_w5', [4, 4, 3, 64], initializer=tf.random_normal_initializer(
-                stddev=0.01))
+            w5 = tf.get_variable('g_w5', [5, 5, 3, 64], initializer=tf.random_normal_initializer(
+                stddev=0.02))
             b5 = tf.get_variable('g_b5', [3], initializer=tf.constant_initializer(0.1))
             deconv4 = self.deconv2d(deconv3, w5, o_shape4) + b5
 
             outputs = tf.nn.tanh(deconv4)
+
+        self.batch_size, _ = reset_batch(64)
 
         return outputs
 

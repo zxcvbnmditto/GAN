@@ -6,7 +6,7 @@ import tensorflow as tf
 from wgan_gp import WGAN_GP
 
 # Define Global params
-tf.app.flags.DEFINE_integer('epochs', 100000, 'Number of epochs to run')
+tf.app.flags.DEFINE_integer('epochs', 5000, 'Number of epochs to run')
 tf.app.flags.DEFINE_integer('step_per_checkpoints', 100, 'Number of steps to save')
 tf.app.flags.DEFINE_integer('batch_size', 64, 'Size of batch')
 tf.app.flags.DEFINE_integer('latent_size', 100, 'Size of latent')
@@ -19,6 +19,7 @@ tf.app.flags.DEFINE_string('checkpoint_filename', 'wgan-gp.ckpt', 'Checkpoint fi
 FLAGS = tf.app.flags.FLAGS
 
 data_dir = '../faces/64-64/'
+
 
 def main():
     # define data
@@ -47,6 +48,7 @@ def main():
         d_iters = 5
         # training
         for epoch in range(FLAGS.epochs):
+            print('{:d}\n'.format(epoch))
             # Update the discriminator
             for _ in range(d_iters):
                 # get the gaussian noise distribution
@@ -64,15 +66,16 @@ def main():
             summary_writer.add_summary(summary_g, epoch)
 
             # Show lost and draw the sampled fake images
-            z_batch = np.random.normal(-1, 1, size=[FLAGS.batch_size, FLAGS.latent_size])
+            z_batch = np.random.normal(-1, 1, size=[16*16, FLAGS.latent_size])
             f_imgs = sess.run([model.Gz], feed_dict={model.Z: z_batch, model.training: False})
 
             utils.immerge_save(f_imgs, FLAGS.epochs)
 
             # save when the epoch % step_per_checkpoint == 0
-            if epoch % FLAGS.step_per_checkpoints == 0:
-                ckpt_file = os.path.join(FLAGS.model_dir, FLAGS.checkpoint_filename)
-                model.saver.save(sess, ckpt_file, global_step=epoch)
+            # if epoch % FLAGS.step_per_checkpoints == 0:
+            #     ckpt_file = os.path.join(FLAGS.model_dir, FLAGS.checkpoint_filename)
+            #     model.saver.save(sess, ckpt_file, global_step=epoch)
+
 
 if __name__ == "__main__":
     main()

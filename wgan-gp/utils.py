@@ -60,8 +60,8 @@ def to_range(images, max, min, type):
 def immerge_save(images, epoch):
     images = np.array(images).squeeze()
 
-    row, col = 8, 8
-    h, w, c = images[1], images[2], images[3]
+    row, col = 16, 16
+    h, w, c = images.shape[1], images.shape[2], images.shape[3]
     path_dir = 'sample_img/'
 
     if not os.path.isdir(path_dir):
