@@ -54,6 +54,7 @@ class DataLoader:
         self.batch_iter += 1
         return self.batches[self.batch_iter]
 
+
 def immerge_save(images, epoch, img_size):
     images = np.array(images).squeeze()
 

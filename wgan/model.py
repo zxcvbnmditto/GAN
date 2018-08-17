@@ -31,13 +31,13 @@ class WGAN():
 
             # Conv layer 3
             conv_3 = tf.layers.conv2d(conv_2, filters=256, kernel_size=5, strides=2, padding='same')
-            conv_3 = tf.contrib.layers.batch_norm(conv_3, scope='bn2', decay=0.9, epsilon=1e-5, scale=True,
+            conv_3 = tf.contrib.layers.batch_norm(conv_3, scope='bn3', decay=0.9, epsilon=1e-5, scale=True,
                                                    is_training=self.training, trainable=True)
             conv_3 = tf.nn.leaky_relu(conv_3, alpha=0.2)
 
             # Conv layer 4
             conv_4 = tf.layers.conv2d(conv_3, filters=512, kernel_size=5, strides=2, padding='same')
-            conv_4 = tf.contrib.layers.batch_norm(conv_4, scope='bn2', decay=0.9, epsilon=1e-5, scale=True,
+            conv_4 = tf.contrib.layers.batch_norm(conv_4, scope='bn4', decay=0.9, epsilon=1e-5, scale=True,
                                                    is_training=self.training, trainable=True)
             conv_4 = tf.nn.leaky_relu(conv_4, alpha=0.2)
 
@@ -108,17 +108,23 @@ class WGAN():
 
         d_vars = [var for var in tf.trainable_variables() if 'discriminator' in var.name]
         g_vars = [var for var in tf.trainable_variables() if 'generator' in var.name]
-        update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+
+        d_update_ops = [var for var in tf.get_collection(tf.GraphKeys.UPDATE_OPS) if 'discriminator' in var.name]
+        g_update_ops = [var for var in tf.get_collection(tf.GraphKeys.UPDATE_OPS) if 'generator' in var.name]
+
+        # print(d_update_ops)
+        # print(g_update_ops)
 
         self.d_clip = [v.assign(tf.clip_by_value(v, -0.01, 0.01)) for v in d_vars]
 
         self.d_sumop = tf.summary.scalar('d_loss', self.d_loss)
         self.g_sumop = tf.summary.scalar('g_loss', self.g_loss)
 
-        with tf.control_dependencies(update_ops):
+        with tf.control_dependencies(g_update_ops) and tf.control_dependencies(self.d_clip):
             self.trainerG = tf.train.RMSPropOptimizer(learning_rate=self.learning_rate).minimize(
                 self.g_loss, var_list=g_vars)
 
+        with tf.control_dependencies(d_update_ops):
             self.trainerD = tf.train.RMSPropOptimizer(learning_rate=self.learning_rate).minimize(
                 self.d_loss, var_list=d_vars)
 
