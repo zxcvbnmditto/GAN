@@ -3,7 +3,7 @@ import utils
 import numpy as np
 import tensorflow as tf
 
-from model import WGAN_GP
+from model import WGAN
 
 # Define Global params
 tf.app.flags.DEFINE_integer('epochs', 100000, 'Number of epochs to run')
@@ -28,7 +28,7 @@ def main():
     db = utils.DataLoader(FLAGS.batch_size)
 
     # define model here
-    model = WGAN_GP(
+    model = WGAN(
         learning_rate=FLAGS.learning_rate,
         batch_size=FLAGS.batch_size,
         latent_size=FLAGS.latent_size,
@@ -72,7 +72,7 @@ def main():
             if epoch % 50 == 0:
                 z_batch = np.random.normal(-1, 1, size=[FLAGS.sample_img_size ** 2, FLAGS.latent_size])
                 f_imgs = sess.run([model.Gz], feed_dict={model.Z: z_batch, model.training: False})
-                utils.immerge_save(f_imgs, epoch + 3150, FLAGS.sample_img_size)
+                utils.immerge_save(f_imgs, epoch, FLAGS.sample_img_size)
 
             # save when the epoch % step_per_checkpoint == 0
             if epoch % FLAGS.step_per_checkpoints == 0:

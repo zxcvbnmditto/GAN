@@ -8,6 +8,7 @@
 *keras/models/
 *wgan/models/
 *wgan/logs/
+*wgan/sample_img
 resize.py
 *wgan-gp/models/
 *wgan-gp/logs/

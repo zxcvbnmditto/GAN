@@ -21,19 +21,6 @@ class DataLoader:
         print("LOADING IMAGES ........")
         files = sorted(glob.glob(data_dir + '*.jpg'))
 
-        # adapted from https://github.com/changwoolee/WGAN-GP-tensorflow/blob/master/model.py
-        # reader = tf.WholeFileReader()
-        # filename_queue = tf.train.string_input_producer(files)
-        # key, value = reader.read(filename_queue)
-        # images = tf.image.decode_jpeg(value, channels=self.c_dim, name="dataset_image")
-        #
-        # images = tf.to_float(
-        #     tf.image.resize_images(images, [64, 64], method=tf.image.ResizeMethod.BICUBIC)) / 127.5 - 1
-        #
-        # batch = tf.train.shuffle_batch([images], batch_size=self.batch_size, capacity=30000,
-        #                                min_after_dequeue=5000,
-        #                                num_threads=4)
-
         images = []
         for file in files:
             image = io.imread(file)
