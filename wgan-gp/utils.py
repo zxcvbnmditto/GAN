@@ -6,6 +6,7 @@ import os
 import tensorflow as tf
 
 from skimage import io
+from scipy import misc
 
 data_dir = '../faces/64-64/'
 
@@ -15,7 +16,7 @@ class DataLoader:
         self.batch_iter = -1
         self.c_dim = 3
         self.images = self.load_data()
-        self.batches = self.create_new_batches()
+        self.batches = self.create_new_batches() 
 
     def load_data(self):
         print("LOADING IMAGES ........")
@@ -66,10 +67,6 @@ class DataLoader:
         self.batch_iter += 1
         return self.batches[self.batch_iter]
 
-def to_range(images, max, min, type):
-    return ((images + 1.) / 2. * (max - min) + min).astype(type)
-
-
 def immerge_save(images, epoch, img_size):
     images = np.array(images).squeeze()
 
@@ -87,6 +84,6 @@ def immerge_save(images, epoch, img_size):
         j = idx // img_size
         img[j * h:j * h + h, i * w:i * w + w, ...] = image
 
-    img = to_range(img, 0, 255, np.uint8)
+    img = (img + 1.) / 2
 
-    return io.imsave(path_dir, img)
+    return misc.imsave(path_dir, img)
