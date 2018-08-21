@@ -23,55 +23,43 @@ class CGAN():
             if (reuse):
                 scope.reuse_variables()
 
-            tags_embed = tf.layers.dense(c, units=256, trainable=True)
-            tags_embed = tf.reshape(tags_embed, [-1, 1, 1, 256])
-            tags_embed = tf.tile(tags_embed, [1, 4, 4, 1])
+            tags_embed = tf.layers.dense(c, units=10, trainable=True)
+            tags_embed = tf.reshape(tags_embed, [-1, 1, 1, 10])
+            tags_embed = tf.tile(tags_embed, [1, 8, 8, 1])
 
             # 64 * 64 * 3
-
             # Conv layer 1
-            conv_1 = tf.layers.conv2d(x, filters=64, kernel_size=5, strides=2, padding='same')
+            conv_1 = tf.layers.conv2d(x, filters=32, kernel_size=5, strides=2, padding='same')
             conv_1 = tf.contrib.layers.batch_norm(conv_1, scope='bn1', decay=0.9, epsilon=1e-5, scale=True,
                                                   is_training=self.training, trainable=True)
             conv_1 = tf.nn.leaky_relu(conv_1, alpha=0.2)
 
-            # 32*32*64
-
+            # 32*32*32
             # Conv layer 2
-            conv_2 = tf.layers.conv2d(conv_1, filters=128, kernel_size=5, strides=2, padding='same')
+            conv_2 = tf.layers.conv2d(conv_1, filters=64, kernel_size=5, strides=2, padding='same')
             conv_2 = tf.contrib.layers.batch_norm(conv_2, scope='bn2', decay=0.9, epsilon=1e-5, scale=True,
                                                   is_training=self.training, trainable=True)
             conv_2 = tf.nn.leaky_relu(conv_2, alpha=0.2)
 
-            # 16*16*128
-
+            # 16*16*64
             # Conv layer 3
-            conv_3 = tf.layers.conv2d(conv_2, filters=256, kernel_size=5, strides=2, padding='same')
+            conv_3 = tf.layers.conv2d(conv_2, filters=128, kernel_size=5, strides=2, padding='same')
             conv_3 = tf.contrib.layers.batch_norm(conv_3, scope='bn3', decay=0.9, epsilon=1e-5, scale=True,
                                                   is_training=self.training, trainable=True)
             conv_3 = tf.nn.leaky_relu(conv_3, alpha=0.2)
 
-            # 8*8*256
-
-            # Conv layer 4
-            conv_4 = tf.layers.conv2d(conv_3, filters=512, kernel_size=5, strides=2, padding='same')
-            conv_4 = tf.contrib.layers.batch_norm(conv_4, scope='bn4', decay=0.9, epsilon=1e-5, scale=True,
-                                                  is_training=self.training, trainable=True)
-            conv_4 = tf.nn.leaky_relu(conv_4, alpha=0.2)
-
-            # 4 * 4 * 512
-
+            # 8*8*128
             # Conv layer 5
-            conv_5 = tf.layers.conv2d(tf.concat([conv_4, tags_embed], axis=-1), filters=512, kernel_size=5, strides=1, padding='same')
+            conv_5 = tf.layers.conv2d(tf.concat([conv_3, tags_embed], axis=-1), filters=128, kernel_size=5, strides=1, padding='same')
             conv_5 = tf.nn.leaky_relu(conv_5, alpha=0.2)
 
+            # 8*8*128
             # flatten
             flatten = tf.layers.flatten(conv_5)
 
             # Fully connect layer
             dense1 = tf.layers.dense(flatten, units=1, trainable=True)
 
-            # Float
             outputs = dense1
 
         return outputs
@@ -83,34 +71,36 @@ class CGAN():
             if (reuse):
                 scope.reuse_variables()
 
-            w1 = tf.get_variable('w1', shape=[self.vocab_size * 2, 256], initializer=tf.random_normal_initializer(stddev=0.02))
-            b1 = tf.get_variable('b1', shape=[256], initializer=tf.constant_initializer(0))
+            w1 = tf.get_variable('w1', shape=[self.vocab_size * 2, 10], initializer=tf.random_normal_initializer(stddev=0.02))
+            b1 = tf.get_variable('b1', shape=[10], initializer=tf.constant_initializer(0))
             tags_embed = tf.matmul(c, w1) + b1
+            tags_embed = tf.contrib.layers.batch_norm(tags_embed, scope='bn1', decay=0.9, epsilon=1e-5, scale=True,
+                                                  is_training=self.training, trainable=True)
 
             inputs = tf.concat([x, tags_embed], axis=-1)
 
             # Dense layer 1
-            dense1 = tf.layers.dense(inputs, units=512*4*4, trainable=True)
-            dense1 = tf.contrib.layers.batch_norm(dense1, scope='bn1', decay=0.9, epsilon=1e-5, scale=True,
+            dense1 = tf.layers.dense(inputs, units=256*4*4, trainable=True)
+            dense1 = tf.contrib.layers.batch_norm(dense1, scope='bn2', decay=0.9, epsilon=1e-5, scale=True,
                                                   is_training=self.training, trainable=True)
             dense1 = tf.nn.relu(dense1)
-            dense1 = tf.reshape(dense1, [-1, 4, 4, 512])
+            dense1 = tf.reshape(dense1, [-1, 4, 4, 256])
 
             # Deconv layer 1
-            deconv1 = tf.layers.conv2d_transpose(dense1, filters=256, kernel_size=5, strides=2, padding='same')
-            deconv1 = tf.contrib.layers.batch_norm(deconv1, scope='bn2', decay=0.9, epsilon=1e-5, scale=True,
+            deconv1 = tf.layers.conv2d_transpose(dense1, filters=128, kernel_size=5, strides=2, padding='same')
+            deconv1 = tf.contrib.layers.batch_norm(deconv1, scope='bn3', decay=0.9, epsilon=1e-5, scale=True,
                                                    is_training=self.training, trainable=True)
             deconv1 = tf.nn.relu(deconv1)
 
             # Deconv layer 2
-            deconv2 = tf.layers.conv2d_transpose(deconv1, filters=128, kernel_size=5, strides=2, padding='same')
-            deconv2 = tf.contrib.layers.batch_norm(deconv2, scope='bn3', decay=0.9, epsilon=1e-5, scale=True,
+            deconv2 = tf.layers.conv2d_transpose(deconv1, filters=64, kernel_size=5, strides=2, padding='same')
+            deconv2 = tf.contrib.layers.batch_norm(deconv2, scope='bn4', decay=0.9, epsilon=1e-5, scale=True,
                                                    is_training=self.training, trainable=True)
             deconv2 = tf.nn.relu(deconv2)
 
             # Deconv layer 3
-            deconv3 = tf.layers.conv2d_transpose(deconv2, filters=64, kernel_size=5, strides=2, padding='same')
-            deconv3 = tf.contrib.layers.batch_norm(deconv3, scope='bn4', decay=0.9, epsilon=1e-5, scale=True,
+            deconv3 = tf.layers.conv2d_transpose(deconv2, filters=32, kernel_size=5, strides=2, padding='same')
+            deconv3 = tf.contrib.layers.batch_norm(deconv3, scope='bn5', decay=0.9, epsilon=1e-5, scale=True,
                                                    is_training=self.training, trainable=True)
             deconv3 = tf.nn.relu(deconv3)
 

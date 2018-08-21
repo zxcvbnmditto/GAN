@@ -62,7 +62,6 @@ class DataLoader:
 
     def gen_one_hot(self, inputs):
         print("Transforming Tag Pairs into One Hot Encoded structure ........")
-
         one_hot_vecs = []
         for tag in inputs:
             hair_vec = np.zeros(len(self.color))
@@ -89,12 +88,9 @@ class DataLoader:
         # prepare wrong_imgs and wrong_tags
         rand_idx = np.random.permutation(len(self.images))
         rand_idx = rand_idx[:self.batch_size]
-
         wrong_imgs = self.images[rand_idx]
-
         rand_idx = np.random.permutation(len(self.images))
         rand_idx = rand_idx[:self.batch_size]
-
         wrong_tags = self.tags[rand_idx]
 
         return self.images[self.batch_iter * self.batch_size: (self.batch_iter + 1) * self.batch_size], \
@@ -103,7 +99,6 @@ class DataLoader:
 
     def create_testing_tags(self):
         print("Creating Testing Tags ........")
-
         for file in testing_tag_file:
             f = open(file, "w")
 
