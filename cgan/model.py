@@ -1,45 +1,72 @@
 import tensorflow as tf
 
 class CGAN():
-    def __init__(self, learning_rate, batch_size, latent_size, img_size):
-        print("Constructing WGAN GP model ........")
+    def __init__(self, learning_rate, batch_size, latent_size, img_size, vocab_size):
+        print("Constructing CGAN model ........")
         self.learning_rate = learning_rate
         self.batch_size = batch_size
         self.latent_size = latent_size
         self.img_size = img_size
+        self.vocab_size = vocab_size
         self.Lambda = 10
-        self.X = tf.placeholder(tf.float32, shape=[None, 64, 64, 3])
-        self.Z = tf.placeholder(tf.float32, shape=[None, self.latent_size])
+        self.correct_imgs = tf.placeholder(tf.float32, shape=[None, 64, 64, 3])
+        self.wrong_imgs = tf.placeholder(tf.float32, shape=[None, 64, 64, 3])
+        self.noise = tf.placeholder(tf.float32, shape=[None, self.latent_size])
+        self.correct_tags = tf.placeholder(tf.float32, shape=[None, 2*self.vocab_size])
+        self.wrong_tags = tf.placeholder(tf.float32, shape=[None, 2*self.vocab_size])
         self.training = tf.placeholder(tf.bool)
         self.build()
 
-    def discriminator(self, x, reuse=False):
+    def discriminator(self, x, c, reuse=False):
         print("Discriminator ...........")
         with tf.variable_scope('discriminator') as scope:
             if (reuse):
                 scope.reuse_variables()
 
+            tags_embed = tf.layers.dense(c, units=256, trainable=True)
+            tags_embed = tf.reshape(tags_embed, [-1, 1, 1, 256])
+            tags_embed = tf.tile(tags_embed, [1, 4, 4, 1])
+
+            # 64 * 64 * 3
+
             # Conv layer 1
             conv_1 = tf.layers.conv2d(x, filters=64, kernel_size=5, strides=2, padding='same')
+            conv_1 = tf.contrib.layers.batch_norm(conv_1, scope='bn1', decay=0.9, epsilon=1e-5, scale=True,
+                                                  is_training=self.training, trainable=True)
             conv_1 = tf.nn.leaky_relu(conv_1, alpha=0.2)
+
+            # 32*32*64
 
             # Conv layer 2
             conv_2 = tf.layers.conv2d(conv_1, filters=128, kernel_size=5, strides=2, padding='same')
-            conv_2 = tf.contrib.layers.layer_norm(conv_2, trainable=True, scope='ln2')
+            conv_2 = tf.contrib.layers.batch_norm(conv_2, scope='bn2', decay=0.9, epsilon=1e-5, scale=True,
+                                                  is_training=self.training, trainable=True)
             conv_2 = tf.nn.leaky_relu(conv_2, alpha=0.2)
+
+            # 16*16*128
 
             # Conv layer 3
             conv_3 = tf.layers.conv2d(conv_2, filters=256, kernel_size=5, strides=2, padding='same')
-            conv_3 = tf.contrib.layers.layer_norm(conv_3, trainable=True, scope='ln3')
+            conv_3 = tf.contrib.layers.batch_norm(conv_3, scope='bn3', decay=0.9, epsilon=1e-5, scale=True,
+                                                  is_training=self.training, trainable=True)
             conv_3 = tf.nn.leaky_relu(conv_3, alpha=0.2)
+
+            # 8*8*256
 
             # Conv layer 4
             conv_4 = tf.layers.conv2d(conv_3, filters=512, kernel_size=5, strides=2, padding='same')
-            conv_4 = tf.contrib.layers.layer_norm(conv_4, trainable=True, scope='ln4')
+            conv_4 = tf.contrib.layers.batch_norm(conv_4, scope='bn4', decay=0.9, epsilon=1e-5, scale=True,
+                                                  is_training=self.training, trainable=True)
             conv_4 = tf.nn.leaky_relu(conv_4, alpha=0.2)
 
+            # 4 * 4 * 512
+
+            # Conv layer 5
+            conv_5 = tf.layers.conv2d(tf.concat([conv_4, tags_embed], axis=-1), filters=512, kernel_size=5, strides=1, padding='same')
+            conv_5 = tf.nn.leaky_relu(conv_5, alpha=0.2)
+
             # flatten
-            flatten = tf.layers.flatten(conv_4)
+            flatten = tf.layers.flatten(conv_5)
 
             # Fully connect layer
             dense1 = tf.layers.dense(flatten, units=1, trainable=True)
@@ -49,15 +76,21 @@ class CGAN():
 
         return outputs
 
-    def generator(self, x, reuse=False):
+    def generator(self, x, c, reuse=False):
         print("Generator ...........")
 
         with tf.variable_scope('generator') as scope:
             if (reuse):
                 scope.reuse_variables()
 
+            w1 = tf.get_variable('w1', shape=[self.vocab_size * 2, 256], initializer=tf.random_normal_initializer(stddev=0.02))
+            b1 = tf.get_variable('b1', shape=[256], initializer=tf.constant_initializer(0))
+            tags_embed = tf.matmul(c, w1) + b1
+
+            inputs = tf.concat([x, tags_embed], axis=-1)
+
             # Dense layer 1
-            dense1 = tf.layers.dense(x, units=512*4*4, trainable=True)
+            dense1 = tf.layers.dense(inputs, units=512*4*4, trainable=True)
             dense1 = tf.contrib.layers.batch_norm(dense1, scope='bn1', decay=0.9, epsilon=1e-5, scale=True,
                                                   is_training=self.training, trainable=True)
             dense1 = tf.nn.relu(dense1)
@@ -89,36 +122,30 @@ class CGAN():
         return outputs
 
     def build(self):
-        # real => images from database
-        self.Dx = self.discriminator(self.X, reuse=False)
-        self.Gz = self.generator(self.Z, reuse=False)
-        # fake => images generated by gaussian distribution
-        self.DG = self.discriminator(self.Gz, reuse=True)
+        self.fake_imgs = self.generator(self.noise, self.correct_tags, reuse=False)
 
-        # generator loss => back propagate of the quality of fake images
-        self.g_loss = -tf.reduce_mean(self.DG)
+        # Four cases
+        # Case 1 => correct_imgs + correct_tags
+        # Case 2 => wrong_imgs (randomly sampled from db) + correct_tags
+        # Case 3 => fake_imgs (generated by the generator) + correct_tags
+        # Case 4 => correct_imgs + wrong_tags (randomly sampled from db)
+        self.case1 = self.discriminator(self.correct_imgs, self.correct_tags, reuse=False)
+        self.case2 = self.discriminator(self.wrong_imgs, self.correct_tags, reuse=True)
+        self.case3 = self.discriminator(self.fake_imgs, self.correct_tags, reuse=True)
+        self.case4 = self.discriminator(self.correct_imgs, self.wrong_tags, reuse=True)
 
-        # discriminator => back propagate of the combined performance of distinguishing real and fake images
-        self.d_real = tf.reduce_mean(self.Dx)
-        self.d_fake = tf.reduce_mean(self.DG)
+        self.g_loss = tf.reduce_mean(
+            tf.nn.sigmoid_cross_entropy_with_logits(logits=self.case3, labels=tf.ones_like(self.case3)))
 
-        # create a distribution for gradient penalty
-        penalty_dist = tf.random_uniform(shape=[self.batch_size, 1], minval=0, maxval=1)
-
-        # Get gradient_penalty
-        differences = self.Gz - self.X
-        interpolates = self.X + penalty_dist * differences
-        grads = tf.gradients(self.discriminator(interpolates, reuse=True), [interpolates])[0]
-        slopes = tf.sqrt(tf.reduce_sum(tf.square(grads), reduction_indices=[1]))
-        self.gradient_penalty = tf.reduce_mean((slopes - 1) ** 2)
-
-        # GRADIENT PENALTY can be viewed as a sort of regularization
-
-        self.d_loss = self.d_fake - self.d_real + self.Lambda * self.gradient_penalty
+        self.d_loss = tf.reduce_mean(
+            tf.nn.sigmoid_cross_entropy_with_logits(logits=self.case1, labels=tf.ones_like(self.case1)) +
+            tf.nn.sigmoid_cross_entropy_with_logits(logits=self.case2, labels=tf.zeros_like(self.case2)) +
+            tf.nn.sigmoid_cross_entropy_with_logits(logits=self.case3, labels=tf.zeros_like(self.case3)) +
+            tf.nn.sigmoid_cross_entropy_with_logits(logits=self.case4, labels=tf.zeros_like(self.case4))
+        )
 
         self.d_sumop = tf.summary.scalar('d_loss', self.d_loss)
         self.g_sumop = tf.summary.scalar('g_loss', self.g_loss)
-        self.p_sumop = tf.summary.scalar('penalty', self.gradient_penalty)
 
         d_vars = [var for var in tf.trainable_variables() if 'discriminator' in var.name]
         g_vars = [var for var in tf.trainable_variables() if 'generator' in var.name]

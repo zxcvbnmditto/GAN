@@ -1,6 +1,6 @@
 import tensorflow as tf
 
-class WGAN_GP():
+class CGAN():
     def __init__(self, learning_rate, batch_size, latent_size, img_size):
         print("Constructing WGAN GP model ........")
         self.learning_rate = learning_rate
