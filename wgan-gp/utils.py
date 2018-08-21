@@ -1,14 +1,11 @@
-import matplotlib.pyplot as plt
 import numpy as np
-import scipy
 import glob
 import os
-import tensorflow as tf
 
 from skimage import io
 from scipy import misc
 
-data_dir = '../faces/64-64/'
+data_dirs = ['../faces/64-64/', '../faces/extra/']
 
 class DataLoader:
     def __init__(self, batch_size):
@@ -16,56 +13,30 @@ class DataLoader:
         self.batch_iter = -1
         self.c_dim = 3
         self.images = self.load_data()
-        self.batches = self.create_new_batches() 
 
     def load_data(self):
         print("LOADING IMAGES ........")
-        files = sorted(glob.glob(data_dir + '*.jpg'))
-
-        # adapted from https://github.com/changwoolee/WGAN-GP-tensorflow/blob/master/model.py
-        # reader = tf.WholeFileReader()
-        # filename_queue = tf.train.string_input_producer(files)
-        # key, value = reader.read(filename_queue)
-        # images = tf.image.decode_jpeg(value, channels=self.c_dim, name="dataset_image")
-        #
-        # images = tf.to_float(
-        #     tf.image.resize_images(images, [64, 64], method=tf.image.ResizeMethod.BICUBIC)) / 127.5 - 1
-        #
-        # batch = tf.train.shuffle_batch([images], batch_size=self.batch_size, capacity=30000,
-        #                                min_after_dequeue=5000,
-        #                                num_threads=4)
-
         images = []
-        for file in files:
-            image = io.imread(file)
-            image = np.array(image)
-            images.append(image)
+        for data_dir in data_dirs:
+            files = sorted(glob.glob(data_dir + '*.jpg'))
+            for file in files:
+                image = io.imread(file)
+                image = np.array(image)
+                images.append(image)
 
         # [batch, 64, 64, 3]
         images = np.array(images)
+        print(images.shape)
         outputs = (images / 127.5) - 1
         return outputs
 
-    def create_new_batches(self):
-        print("CREATING NEW BATCHES ........")
-        np.random.shuffle(self.images)
-
-        batches = []
-        for i in range(0, len(self.images), self.batch_size):
-            if len(self.images) < i + self.batch_size:
-                break
-            batches.append(self.images[i: i + self.batch_size])
-
-        batches = np.array(batches)
-        return np.array(batches)
-
     def get_nextbatch(self):
-        if self.batches.shape[0] <= self.batch_iter + 1:
-            self.batches = self.create_new_batches()
+        if self.images.shape[0] <= (self.batch_iter + 2) * self.batch_size:
+            np.random.shuffle(self.images)
             self.batch_iter = -1
 
         self.batch_iter += 1
-        return self.batches[self.batch_iter]
+        return self.images[self.batch_iter * self.batch_size: (self.batch_iter + 1) * self.batch_size]
 
 def immerge_save(images, epoch, img_size):
     images = np.array(images).squeeze()

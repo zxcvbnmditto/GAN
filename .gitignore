@@ -1,17 +1,14 @@
 resize.py
 make_gif.py
+.gitignore
 *venv/
 *faces/
 *__pycache__/
 *.idea/
-*vanilla_gan/model/
-*vanilla_gan/logs/
+*vanilla_gan/
 *backup/
-*keras/models/
-*wgan/models/
-*wgan/logs/
-*wgan/sample_img
-*wgan-gp/models/
-*wgan-gp/logs/
-*wgan-gp/sample_img
+*keras/
+*models/
+*logs/
+*sample_img/
 

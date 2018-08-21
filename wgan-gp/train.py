@@ -6,7 +6,8 @@ import tensorflow as tf
 from model import WGAN_GP
 
 # Define Global params
-tf.app.flags.DEFINE_integer('epochs', 30000, 'Number of epochs to run')
+tf.app.flags.DEFINE_integer('start_epoch', 50100, 'Number of epoch to start running')
+tf.app.flags.DEFINE_integer('epochs', 75000, 'Number of epochs to run')
 tf.app.flags.DEFINE_integer('step_per_checkpoints', 100, 'Number of steps to save')
 tf.app.flags.DEFINE_integer('batch_size', 64, 'Size of batch')
 tf.app.flags.DEFINE_integer('latent_size', 100, 'Size of latent')
@@ -19,9 +20,6 @@ tf.app.flags.DEFINE_string('model_dir', 'models/', 'Model path')
 tf.app.flags.DEFINE_string('checkpoint_filename', 'wgan-gp.ckpt', 'Checkpoint filename')
 
 FLAGS = tf.app.flags.FLAGS
-
-data_dir = '../faces/64-64/'
-
 
 def main():
     # define data
@@ -50,7 +48,7 @@ def main():
 
         d_iters = 5
         # training
-        for epoch in range(FLAGS.epochs):
+        for epoch in range(FLAGS.start_epoch, FLAGS.start_epoch + FLAGS.epochs):
             print('{:d}\n'.format(epoch))
             # Update the discriminator
             for _ in range(d_iters):
@@ -69,10 +67,10 @@ def main():
             summary_writer.add_summary(summary_g, epoch)
 
             # Show lost and draw the sampled fake images
-            if epoch % 50 == 0:
+            if epoch % (FLAGS.step_per_checkpoints) == 0:
                 z_batch = np.random.normal(-1, 1, size=[FLAGS.sample_img_size ** 2, FLAGS.latent_size])
                 f_imgs = sess.run([model.Gz], feed_dict={model.Z: z_batch, model.training: False})
-                utils.immerge_save(f_imgs, epoch + 34000, FLAGS.sample_img_size)
+                utils.immerge_save(f_imgs, epoch, FLAGS.sample_img_size)
 
             # save when the epoch % step_per_checkpoint == 0
             if epoch % FLAGS.step_per_checkpoints == 0:

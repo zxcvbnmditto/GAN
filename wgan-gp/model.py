@@ -2,7 +2,7 @@ import tensorflow as tf
 
 class WGAN_GP():
     def __init__(self, learning_rate, batch_size, latent_size, img_size):
-        print("Constructing WGAN model ........")
+        print("Constructing WGAN GP model ........")
         self.learning_rate = learning_rate
         self.batch_size = batch_size
         self.latent_size = latent_size
@@ -21,7 +21,6 @@ class WGAN_GP():
 
             # Conv layer 1
             conv_1 = tf.layers.conv2d(x, filters=64, kernel_size=5, strides=2, padding='same')
-            # conv_1 = tf.contrib.layers.layer_norm(conv_1, trainable=True, scope='ln1')
             conv_1 = tf.nn.leaky_relu(conv_1, alpha=0.2)
 
             # Conv layer 2
@@ -40,7 +39,7 @@ class WGAN_GP():
             conv_4 = tf.nn.leaky_relu(conv_4, alpha=0.2)
 
             # flatten
-            flatten = tf.layers.flatten(conv_3)
+            flatten = tf.layers.flatten(conv_4)
 
             # Fully connect layer
             dense1 = tf.layers.dense(flatten, units=1, trainable=True)
@@ -134,5 +133,5 @@ class WGAN_GP():
             self.trainerD = tf.train.AdamOptimizer(learning_rate=self.learning_rate, beta1=0.5, beta2=0.9).minimize(
                 self.d_loss, var_list=d_vars)
 
-        self.saver = tf.train.Saver(tf.global_variables(), max_to_keep=5)
+        self.saver = tf.train.Saver(tf.global_variables())
 

@@ -21,10 +21,6 @@ class WGAN_GP():
     def deconv2d(self, x, w, shape):
         return tf.nn.conv2d_transpose(value=x, filter=w, output_shape=shape, strides=[1, 2, 2, 1], padding='SAME')
 
-    # ksize => size of the window to pool
-    def pooling(self, x):
-        return tf.nn.avg_pool(value=x, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME')
-
     def discriminator(self, x, reuse=False):
         print("Discriminator ...........")
         with tf.variable_scope('discriminator') as scope:
@@ -35,7 +31,6 @@ class WGAN_GP():
             w1 = tf.get_variable('d_w1', [5, 5, 3, 64], initializer=tf.random_normal_initializer(stddev=0.02))
             b1 = tf.get_variable('d_b1', [64], initializer=tf.constant_initializer(0))
             conv_1 = self.conv2d(x, w1) + b1
-            conv_1 = tf.contrib.layers.layer_norm(conv_1, trainable=True, scope='d_ln1')
             conv_1 = tf.nn.leaky_relu(conv_1, alpha=0.2)
 
             # Conv layer 2
@@ -70,20 +65,8 @@ class WGAN_GP():
 
         return outputs
 
-    def generator(self, x, reuse=False, training=True):
+    def generator(self, x, reuse=False):
         print("Generator ...........")
-
-        def reset_batch(size):
-            is_train = True
-
-            if size == self.img_size ** 2:
-                is_train = False
-
-            return size, is_train
-
-        self.batch_size, training = tf.cond(tf.equal(self.training, tf.constant(False)), lambda: reset_batch(
-            self.img_size ** 2), lambda: reset_batch(self.batch_size))
-
         with tf.variable_scope('generator') as scope:
             if (reuse):
                 scope.reuse_variables()
@@ -94,9 +77,9 @@ class WGAN_GP():
             b1 = tf.get_variable('g_b1', [512 * 4 * 4], initializer=tf.constant_initializer(0))
             dense1 = tf.matmul(x, w1) + b1
             dense1 = tf.contrib.layers.batch_norm(dense1, scope='g_bn1', decay=0.9, epsilon=1e-5, scale=True,
-                                                  is_training=training)
+                                                  is_training=self.training)
             dense1 = tf.nn.relu(dense1)
-            dense1 = tf.reshape(dense1, [self.batch_size, 4, 4, 512])
+            dense1 = tf.reshape(dense1, [-1, 4, 4, 512])
 
             # Deconv layer 1
             o_shape1 = [self.batch_size, 8, 8, 256]
@@ -106,7 +89,7 @@ class WGAN_GP():
             deconv1 = self.deconv2d(dense1, w2, o_shape1) + b2
 
             deconv1 = tf.contrib.layers.batch_norm(deconv1, scope='g_bn2', decay=0.9, epsilon=1e-5, scale=True,
-                                                   is_training=training)
+                                                   is_training=self.training)
             deconv1 = tf.nn.relu(deconv1)
 
             # Deconv layer 2
@@ -116,9 +99,8 @@ class WGAN_GP():
             b3 = tf.get_variable('g_b3', [128], initializer=tf.constant_initializer(0.1))
             deconv2 = self.deconv2d(deconv1, w3, o_shape2) + b3
             deconv2 = tf.contrib.layers.batch_norm(deconv2, scope='g_bn3', decay=0.9, epsilon=1e-5, scale=True,
-                                                   is_training=training)
+                                                   is_training=self.training)
             deconv2 = tf.nn.relu(deconv2)
-
 
             # Deconv layer 3
             o_shape3 = [self.batch_size, 32, 32, 64]
@@ -127,9 +109,8 @@ class WGAN_GP():
             b4 = tf.get_variable('g_b4', [64], initializer=tf.constant_initializer(0.1))
             deconv3 = self.deconv2d(deconv2, w4, o_shape3) + b4
             deconv3 = tf.contrib.layers.batch_norm(deconv3, scope='g_bn4', decay=0.9, epsilon=1e-5, scale=True,
-                                                   is_training=training)
+                                                   is_training=self.training)
             deconv3 = tf.nn.relu(deconv3)
-
 
             # Deconv layer 4
             o_shape4 = [self.batch_size, 64, 64, 3]
@@ -139,8 +120,6 @@ class WGAN_GP():
             deconv4 = self.deconv2d(deconv3, w5, o_shape4) + b5
 
             outputs = tf.nn.tanh(deconv4)
-
-        self.batch_size, _ = reset_batch(self.batch_size)
 
         return outputs
 
@@ -178,19 +157,18 @@ class WGAN_GP():
 
         d_vars = [var for var in tf.trainable_variables() if 'discriminator' in var.name]
         g_vars = [var for var in tf.trainable_variables() if 'generator' in var.name]
-
         update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
 
-        print(d_vars)
-        print(g_vars)
-        print(update_ops)
+        # print(d_vars)
+        # print(g_vars)
+        # print(update_ops)
 
         with tf.control_dependencies(update_ops):
-            self.trainerD = tf.train.AdamOptimizer(learning_rate=self.learning_rate, beta1=0., beta2=0.9).minimize(
-                self.d_loss, var_list=d_vars)
-
             self.trainerG = tf.train.AdamOptimizer(learning_rate=self.learning_rate, beta1=0., beta2=0.9).minimize(
                 self.g_loss, var_list=g_vars)
+
+        self.trainerD = tf.train.AdamOptimizer(learning_rate=self.learning_rate, beta1=0., beta2=0.9).minimize(
+            self.d_loss, var_list=d_vars)
 
         self.saver = tf.train.Saver(tf.global_variables(), max_to_keep=3)
 
