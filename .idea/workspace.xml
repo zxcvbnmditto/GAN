@@ -2,9 +2,8 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="9c1d09e1-54c6-48b7-a555-ccb2ee60c155" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/cgan/model.py" beforeDir="false" afterPath="$PROJECT_DIR$/cgan/model.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cgan/model.py" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/cgan/train.py" beforeDir="false" afterPath="$PROJECT_DIR$/cgan/train.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cgan/utils.py" beforeDir="false" afterPath="$PROJECT_DIR$/cgan/utils.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -24,22 +23,22 @@
       </usages-collector>
       <usages-collector id="statistics.file.extensions.open">
         <counts>
-          <entry key="py" value="20" />
+          <entry key="py" value="28" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.types.open">
         <counts>
-          <entry key="Python" value="20" />
+          <entry key="Python" value="28" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.extensions.edit">
         <counts>
-          <entry key="py" value="6958" />
+          <entry key="py" value="7464" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.types.edit">
         <counts>
-          <entry key="Python" value="6958" />
+          <entry key="Python" value="7464" />
         </counts>
       </usages-collector>
     </session>
@@ -49,8 +48,8 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/cgan/utils.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="1500">
-              <caret line="100" column="47" selection-start-line="100" selection-start-column="47" selection-end-line="100" selection-end-column="47" />
+            <state relative-caret-position="330">
+              <caret line="31" column="38" selection-start-line="31" selection-end-line="32" />
               <folding>
                 <element signature="e#0#18#0" expanded="true" />
                 <marker date="1534868123335" expanded="true" signature="711:720" ph="..." />
@@ -60,22 +59,22 @@
         </entry>
       </file>
       <file pinned="false" current-in-tab="true">
-        <entry file="file://$PROJECT_DIR$/cgan/model.py">
+        <entry file="file://$PROJECT_DIR$/cgan/train.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="15">
-              <caret line="1" selection-start-line="1" selection-end-line="1" />
+            <state relative-caret-position="-165">
+              <caret line="16" column="48" selection-start-line="16" selection-start-column="48" selection-end-line="16" selection-end-column="48" />
+              <folding>
+                <element signature="e#0#18#0" expanded="true" />
+              </folding>
             </state>
           </provider>
         </entry>
       </file>
       <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/cgan/train.py">
+        <entry file="file://$PROJECT_DIR$/cgan/wgan_gp.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="330">
-              <caret line="22" lean-forward="true" selection-start-line="22" selection-end-line="22" />
-              <folding>
-                <element signature="e#0#18#0" expanded="true" />
-              </folding>
+            <state relative-caret-position="-12">
+              <caret line="116" column="8" selection-start-line="116" selection-start-column="8" selection-end-line="116" selection-end-column="8" />
             </state>
           </provider>
         </entry>
@@ -116,13 +115,16 @@
         <option value="$PROJECT_DIR$/wgan-gp/train.py" />
         <option value="$PROJECT_DIR$/make_test_tags.py" />
         <option value="$PROJECT_DIR$/wgan-gp/model.py" />
-        <option value="$PROJECT_DIR$/cgan/train.py" />
         <option value="$PROJECT_DIR$/cgan/utils.py" />
+        <option value="$PROJECT_DIR$/make_gif.py" />
         <option value="$PROJECT_DIR$/cgan/model.py" />
+        <option value="$PROJECT_DIR$/cgan/wgan-gp.py" />
+        <option value="$PROJECT_DIR$/cgan/train.py" />
+        <option value="$PROJECT_DIR$/cgan/wgan_gp.py" />
       </list>
     </option>
   </component>
-  <component name="ProjectFrameBounds" extendedState="6">
+  <component name="ProjectFrameBounds" extendedState="7">
     <option name="x" value="2180" />
     <option name="y" value="40" />
     <option name="width" value="1400" />
@@ -146,6 +148,11 @@
               <item name="GAN" type="b2602c69:ProjectViewProjectNode" />
               <item name="GAN" type="462c0819:PsiDirectoryNode" />
               <item name="cgan" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="GAN" type="b2602c69:ProjectViewProjectNode" />
+              <item name="GAN" type="462c0819:PsiDirectoryNode" />
+              <item name="wgan-gp" type="462c0819:PsiDirectoryNode" />
             </path>
             <path>
               <item name="GAN" type="b2602c69:ProjectViewProjectNode" />
@@ -187,7 +194,7 @@
     <servers />
   </component>
   <component name="ToolWindowManager">
-    <frame x="1987" y="25" width="1853" height="1055" extended-state="6" />
+    <frame x="1987" y="25" width="1853" height="1055" extended-state="7" />
     <editor active="true" />
     <layout>
       <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.17377049" />
@@ -231,13 +238,6 @@
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/make_test_tags.py" />
-    <entry file="file://$PROJECT_DIR$/wgan-gp/wgan_gp.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="868">
-          <caret line="117" column="29" selection-start-line="117" selection-start-column="29" selection-end-line="117" selection-end-column="29" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/wgan-gp/train.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="75">
@@ -248,17 +248,57 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/make_gif.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="330">
+          <caret line="22" lean-forward="true" selection-start-line="22" selection-end-line="22" />
+          <folding>
+            <element signature="e#0#10#0" expanded="true" />
+            <marker date="1534910189037" expanded="true" signature="606:973" ph="..." />
+            <marker date="1534910189037" expanded="true" signature="984:989" ph="..." />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/cgan/model.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="285">
+          <caret line="19" column="34" lean-forward="true" selection-start-line="19" selection-start-column="34" selection-end-line="19" selection-end-column="34" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/wgan-gp/wgan_gp.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="1878">
+          <caret line="148" lean-forward="true" selection-start-line="148" selection-end-line="148" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/cgan/wgan-gp.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-1122">
+          <caret line="32" column="12" selection-start-line="32" selection-start-column="14" selection-end-line="32" selection-end-column="88" />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/wgan-gp/model.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-1257">
-          <caret line="1" selection-start-line="1" selection-end-line="1" />
+        <state relative-caret-position="-750">
+          <caret line="28" column="51" selection-start-line="28" selection-start-column="46" selection-end-line="28" selection-end-column="51" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/cgan/dcgan.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-1275">
+          <caret line="14" column="39" selection-start-line="14" selection-start-column="39" selection-end-line="14" selection-end-column="39" />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/cgan/utils.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="1500">
-          <caret line="100" column="47" selection-start-line="100" selection-start-column="47" selection-end-line="100" selection-end-column="47" />
+        <state relative-caret-position="330">
+          <caret line="31" column="38" selection-start-line="31" selection-end-line="32" />
           <folding>
             <element signature="e#0#18#0" expanded="true" />
             <marker date="1534868123335" expanded="true" signature="711:720" ph="..." />
@@ -266,20 +306,20 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/cgan/train.py">
+    <entry file="file://$PROJECT_DIR$/cgan/wgan_gp.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="330">
-          <caret line="22" lean-forward="true" selection-start-line="22" selection-end-line="22" />
-          <folding>
-            <element signature="e#0#18#0" expanded="true" />
-          </folding>
+        <state relative-caret-position="-12">
+          <caret line="116" column="8" selection-start-line="116" selection-start-column="8" selection-end-line="116" selection-end-column="8" />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/cgan/model.py">
+    <entry file="file://$PROJECT_DIR$/cgan/train.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="15">
-          <caret line="1" selection-start-line="1" selection-end-line="1" />
+        <state relative-caret-position="-165">
+          <caret line="16" column="48" selection-start-line="16" selection-start-column="48" selection-end-line="16" selection-end-column="48" />
+          <folding>
+            <element signature="e#0#18#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>

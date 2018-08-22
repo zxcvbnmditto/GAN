@@ -30,30 +30,35 @@ class CGAN():
             # 64 * 64 * 3
             # Conv layer 1
             conv_1 = tf.layers.conv2d(x, filters=32, kernel_size=5, strides=2, padding='same')
-            conv_1 = tf.contrib.layers.batch_norm(conv_1, scope='bn1', decay=0.9, epsilon=1e-5, scale=True,
-                                                  is_training=self.training, trainable=True)
+            # conv_1 = tf.contrib.layers.layer_norm(conv_1, trainable=True, scope='ln1')
+
             conv_1 = tf.nn.leaky_relu(conv_1, alpha=0.2)
 
             # 32*32*32
             # Conv layer 2
             conv_2 = tf.layers.conv2d(conv_1, filters=64, kernel_size=5, strides=2, padding='same')
-            conv_2 = tf.contrib.layers.batch_norm(conv_2, scope='bn2', decay=0.9, epsilon=1e-5, scale=True,
-                                                  is_training=self.training, trainable=True)
+            conv_2 = tf.contrib.layers.layer_norm(conv_2, trainable=True, scope='ln2')
             conv_2 = tf.nn.leaky_relu(conv_2, alpha=0.2)
 
             # 16*16*64
             # Conv layer 3
             conv_3 = tf.layers.conv2d(conv_2, filters=128, kernel_size=5, strides=2, padding='same')
-            conv_3 = tf.contrib.layers.batch_norm(conv_3, scope='bn3', decay=0.9, epsilon=1e-5, scale=True,
-                                                  is_training=self.training, trainable=True)
+            conv_3 = tf.contrib.layers.layer_norm(conv_2, trainable=True, scope='ln3')
             conv_3 = tf.nn.leaky_relu(conv_3, alpha=0.2)
 
             # 8*8*128
+            # Conv layer 4
+            # Conv layer 3
+            conv_4 = tf.layers.conv2d(conv_3, filters=256, kernel_size=5, strides=2, padding='same')
+            conv_4 = tf.contrib.layers.layer_norm(conv_4, trainable=True, scope='ln4')
+            conv_4 = tf.nn.leaky_relu(conv_4, alpha=0.2)
+
+            # 4*4*256
             # Conv layer 5
-            conv_5 = tf.layers.conv2d(tf.concat([conv_3, tags_embed], axis=-1), filters=128, kernel_size=5, strides=1, padding='same')
+            conv_5 = tf.layers.conv2d(tf.concat([conv_4, tags_embed], axis=-1), filters=256, kernel_size=5, strides=1, padding='same')
             conv_5 = tf.nn.leaky_relu(conv_5, alpha=0.2)
 
-            # 8*8*128
+            # 4 * 4 * 256
             # flatten
             flatten = tf.layers.flatten(conv_5)
 
@@ -124,15 +129,25 @@ class CGAN():
         self.case3 = self.discriminator(self.fake_imgs, self.correct_tags, reuse=True)
         self.case4 = self.discriminator(self.correct_imgs, self.wrong_tags, reuse=True)
 
-        self.g_loss = tf.reduce_mean(
-            tf.nn.sigmoid_cross_entropy_with_logits(logits=self.case3, labels=tf.ones_like(self.case3)))
+        # wgan-gp
+        self.g_loss = -tf.reduce_mean(self.case3)
 
-        self.d_loss = tf.reduce_mean(
-            tf.nn.sigmoid_cross_entropy_with_logits(logits=self.case1, labels=tf.ones_like(self.case1)) +
-            tf.nn.sigmoid_cross_entropy_with_logits(logits=self.case2, labels=tf.zeros_like(self.case2)) +
-            tf.nn.sigmoid_cross_entropy_with_logits(logits=self.case3, labels=tf.zeros_like(self.case3)) +
-            tf.nn.sigmoid_cross_entropy_with_logits(logits=self.case4, labels=tf.zeros_like(self.case4))
-        )
+        self.d_real = tf.reduce_mean(self.case1)
+        # self.d_fake = tf.reduce_mean(self.case2) + tf.reduce_mean(self.case3) + tf.reduce_mean(self.case4)
+        self.d_fake = (tf.reduce_mean(self.case2) + tf.reduce_mean(self.case3) + tf.reduce_mean(self.case4)) / 3
+
+        # create a distribution for gradient penalty
+        penalty_dist = tf.random_uniform(shape=[self.batch_size, 1], minval=0, maxval=1)
+
+        # Get gradient_penalty
+        differences = self.fake_imgs - self.correct_imgs
+        interpolates = self.correct_imgs + penalty_dist * differences
+        grads = tf.gradients(self.discriminator(interpolates, self.correct_tags, reuse=True), [interpolates])[0] # fix
+        slopes = tf.sqrt(tf.reduce_sum(tf.square(grads), reduction_indices=[1]))
+        self.gradient_penalty = tf.reduce_mean((slopes - 1) ** 2)
+
+        # GRADIENT PENALTY can be viewed as a sort of regularization
+        self.d_loss = self.d_fake - self.d_real + self.Lambda * self.gradient_penalty
 
         self.d_sumop = tf.summary.scalar('d_loss', self.d_loss)
         self.g_sumop = tf.summary.scalar('g_loss', self.g_loss)

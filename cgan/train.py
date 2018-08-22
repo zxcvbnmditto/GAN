@@ -3,14 +3,14 @@ import tensorflow as tf
 import utils
 import os
 
-from model import CGAN
+from wgan_gp import CGAN
 
 # Define Global params
 tf.app.flags.DEFINE_integer('start_epoch', 0, 'Number of epoch to start running')
-tf.app.flags.DEFINE_integer('epochs', 25000, 'Number of epochs to run')
+tf.app.flags.DEFINE_integer('epochs', 50000, 'Number of epochs to run')
 tf.app.flags.DEFINE_integer('d_iter', 5, 'Number of iterations training discriminator per epoch')
 tf.app.flags.DEFINE_integer('step_per_checkpoints', 100, 'Number of steps to save a ckpt')
-tf.app.flags.DEFINE_integer('step_per_image', 50, 'Number of steps to save an image')
+tf.app.flags.DEFINE_integer('step_per_image', 1, 'Number of steps to save an image')
 tf.app.flags.DEFINE_integer('batch_size', 64, 'Size of batch')
 tf.app.flags.DEFINE_integer('latent_size', 100, 'Size of latent')
 tf.app.flags.DEFINE_integer('embedding_size', 100, 'Size of Embedding')
@@ -46,7 +46,7 @@ def main():
             sess.run(tf.global_variables_initializer())
 
         # Create Tensorboard
-        summary_writer = tf.summary.FileWriter('logs/', graph=sess.graph)
+        # summary_writer = tf.summary.FileWriter('logs/', graph=sess.graph)
 
         # training
         for epoch in range(FLAGS.start_epoch, FLAGS.start_epoch + FLAGS.epochs):
@@ -81,8 +81,8 @@ def main():
             _, summary_g = sess.run([model.trainerG, model.g_sumop], feed_dict=feed_dict)
 
             # Write loss to tensorboard
-            summary_writer.add_summary(summary_d, epoch)
-            summary_writer.add_summary(summary_g, epoch)
+            # summary_writer.add_summary(summary_d, epoch)
+            # summary_writer.add_summary(summary_g, epoch)
 
             # Graph the images
             if epoch % FLAGS.step_per_image == 0:
@@ -94,12 +94,12 @@ def main():
                     model.training: False
                 }
                 f_imgs = sess.run([model.fake_imgs], feed_dict=feed_dict)
-                utils.immerge_save(f_imgs, epoch, FLAGS.sample_img_size)
+                utils.immerge_save(f_imgs, 1, FLAGS.sample_img_size)
 
             # Save model
-            if epoch % FLAGS.step_per_checkpoints == 0:
-                ckpt_file = os.path.join(FLAGS.model_dir, FLAGS.checkpoint_filename)
-                model.saver.save(sess, ckpt_file, global_step=epoch)
+            # if epoch % FLAGS.step_per_checkpoints == 0:
+            #     ckpt_file = os.path.join(FLAGS.model_dir, FLAGS.checkpoint_filename)
+            #     model.saver.save(sess, ckpt_file, global_step=epoch)
 
 
 if __name__ == "__main__":
