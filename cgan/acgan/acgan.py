@@ -1,8 +1,9 @@
 import tensorflow as tf
+import ops
 
 class ACGAN():
     def __init__(self, learning_rate, batch_size, latent_size, img_size, vocab_size):
-        print("Constructing CGAN model ........")
+        print("Constructing ACGAN model ........")
         self.learning_rate = learning_rate
         self.batch_size = batch_size
         self.latent_size = latent_size
@@ -30,21 +31,21 @@ class ACGAN():
             # Conv layer 2
             conv_2 = tf.layers.conv2d(conv_1, filters=64, kernel_size=5, strides=2, padding='same')
             conv_2 = tf.contrib.layers.batch_norm(conv_2, scope='bn2', decay=0.9, epsilon=1e-5, scale=True,
-                                                  is_training=self.training, trainable=True)
+                                                   is_training=self.training, trainable=True)
             conv_2 = tf.nn.leaky_relu(conv_2, alpha=0.2)
 
             # 16*16*64
             # Conv layer 3
             conv_3 = tf.layers.conv2d(conv_2, filters=128, kernel_size=5, strides=2, padding='same')
             conv_3 = tf.contrib.layers.batch_norm(conv_3, scope='bn3', decay=0.9, epsilon=1e-5, scale=True,
-                                                  is_training=self.training, trainable=True)
+                                                   is_training=self.training, trainable=True)
             conv_3 = tf.nn.leaky_relu(conv_3, alpha=0.2)
 
             # 8*8*128
             # Conv layer 4
             conv_4 = tf.layers.conv2d(conv_3, filters=256, kernel_size=5, strides=2, padding='same')
             conv_4 = tf.contrib.layers.batch_norm(conv_4, scope='bn4', decay=0.9, epsilon=1e-5, scale=True,
-                                                  is_training=self.training, trainable=True)
+                                                   is_training=self.training, trainable=True)
             conv_4 = tf.nn.leaky_relu(conv_4, alpha=0.2)
 
             # 4*4*256
@@ -62,21 +63,12 @@ class ACGAN():
         with tf.variable_scope('classifier') as scope:
             if (reuse):
                 scope.reuse_variables()
-
             # x => input => a conv layer
             flatten = tf.layers.flatten(x)
-
             # Dense 1
-            # dense1 = tf.layers.dense(flatten, units=512, trainable=True)
-            # dense1 = tf.contrib.layers.batch_norm(dense1, scope='bn1', decay=0.9, epsilon=1e-5, scale=True,
-            #                                       is_training=self.training, trainable=True)
-            # dense1 = tf.nn.leaky_relu(dense1, alpha=0.2)
+            dense1 = tf.layers.dense(flatten, units=self.vocab_size, trainable=True)
 
-            # Dense 2
-            dense2 = tf.layers.dense(flatten, units=self.vocab_size, trainable=True)
-            # dense2 = tf.nn.softmax(dense2)
-
-        return dense2
+        return dense1
 
 
     def generator(self, x, c, reuse=False):
@@ -86,11 +78,6 @@ class ACGAN():
             if (reuse):
                 scope.reuse_variables()
 
-            # w1 = tf.get_variable('w1', shape=[self.vocab_size, 20], initializer=tf.random_normal_initializer(stddev=0.02))
-            # b1 = tf.get_variable('b1', shape=[20], initializer=tf.constant_initializer(0))
-            # tags_embed = tf.matmul(c, w1) + b1
-            # tags_embed = tf.contrib.layers.batch_norm(tags_embed, scope='bn1', decay=0.9, epsilon=1e-5, scale=True,
-            #                                       is_training=self.training, trainable=True)
             inputs = tf.concat([x, c], axis=-1)
 
             # Dense layer 1
@@ -133,7 +120,6 @@ class ACGAN():
         self.c_tag_class = self.classifier(self.dc_net, reuse=False)
         self.f_tag_class = self.classifier(self.df_net, reuse=True)
 
-
         # ACGAN
         self.g_loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.f_real_label, labels=tf.ones_like(self.f_real_label)))
 
@@ -148,7 +134,6 @@ class ACGAN():
         self.d_sumop = tf.summary.scalar('d_loss', self.d_loss)
         self.g_sumop = tf.summary.scalar('g_loss', self.g_loss)
         self.c_sumop = tf.summary.scalar('c_loss', self.c_loss)
-
 
         d_vars = [var for var in tf.trainable_variables() if 'discriminator' in var.name]
         g_vars = [var for var in tf.trainable_variables() if 'generator' in var.name]
