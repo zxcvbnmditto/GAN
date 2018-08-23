@@ -7,9 +7,9 @@ import random
 from skimage import io
 from scipy import misc
 
-data_dirs = ['../faces/extra/']
-tag_files = ['../faces/tags/tags.csv']
-testing_tag_file = ['../faces/testing_tags/test_tags.csv']
+data_dirs = ['../../faces/extra/']
+tag_files = ['../../faces/tags/tags.csv']
+testing_tag_file = ['../../faces/testing_tags/test_tags.csv']
 
 
 class DataLoader:
@@ -36,7 +36,6 @@ class DataLoader:
                 images.append(image)
 
         images = np.array(images)
-        print(images.shape)
         return images
 
     def load_tags(self, file_collections):
