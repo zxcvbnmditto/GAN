@@ -32,7 +32,7 @@ def main():
         batch_size=FLAGS.batch_size,
         latent_size=FLAGS.latent_size,
         img_size=FLAGS.sample_img_size,
-        vocab_size=len(db.color)
+        vocab_size=len(db.color_dict) ** 2
     )
 
     # print(db.color)
@@ -52,7 +52,7 @@ def main():
 
         # training
         for epoch in range(FLAGS.start_epoch, FLAGS.start_epoch + FLAGS.epochs):
-            # print('{:d}\n'.format(epoch))
+            print('Epoch: {:d}\n'.format(epoch))
 
             # Update the discriminator
             for _ in range(FLAGS.d_iter):
@@ -61,36 +61,27 @@ def main():
                 feed_dict = {
                     model.correct_imgs: c_imgs,
                     model.correct_tags: c_tags,
-                    # model.wrong_imgs: w_imgs,
-                    # model.wrong_tags: w_tags,
                     model.noise: noise,
                     model.training: True
                 }
 
-                _, summary_d, c_loss, s_loss, temp3 = sess.run(
-                    [model.trainerD, model.d_sumop, model.loss_condition, model.loss_source, model.temp3], feed_dict=feed_dict)
+                _, summary_d = sess.run([model.trainerD, model.d_sumop], feed_dict=feed_dict)
 
-                # temp3 = ['{:.2f}'.format(i) for i in temp3]
-
-                print('\ncEpoch: {:d} C_loss: {:f} S_loss: {:f}\n'.format(epoch, c_loss, s_loss))
-                print(temp3.shape)
-
-            # Update the generator
+            # Update the generator and classidier
             noise = np.random.normal(-1, 1, size=[FLAGS.batch_size, FLAGS.latent_size])
             c_imgs, c_tags, w_imgs, w_tags = db.get_nextbatch()
             feed_dict = {
                 model.correct_imgs: c_imgs,
                 model.correct_tags: c_tags,
-                # model.wrong_imgs: w_imgs,
-                # model.wrong_tags: w_tags,
                 model.noise: noise,
                 model.training: True
             }
-            _, summary_g = sess.run([model.trainerG, model.g_sumop], feed_dict=feed_dict)
+            _, _, summary_g, summary_c = sess.run([model.trainerG, model.trainerC, model.g_sumop, model.c_sumop], feed_dict=feed_dict)
 
             # Write loss to tensorboard
             # summary_writer.add_summary(summary_d, epoch)
             # summary_writer.add_summary(summary_g, epoch)
+            # summary_writer.add_summary(summary_c, epoch)
 
             # Graph the images
             if epoch % FLAGS.step_per_image == 0:

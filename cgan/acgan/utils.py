@@ -18,7 +18,7 @@ class DataLoader:
         self.sample_img_size = FLAGS.sample_img_size
         self.batch_iter = -1
         self.c_dim = 3
-        self.color = []
+        self.color_dict = []
         self.images = self.load_images()
         self.tags = self.gen_one_hot(self.load_tags(tag_files))
         self.create_testing_tags()
@@ -49,12 +49,12 @@ class DataLoader:
                     hair_color = row[1].split()[0]
                     eye_color = row[1].split()[2]
 
-                    if hair_color not in self.color:
-                        self.color.append(hair_color)
-                    if eye_color not in self.color:
-                        self.color.append(eye_color)
+                    if hair_color not in self.color_dict:
+                        self.color_dict.append(hair_color)
+                    if eye_color not in self.color_dict:
+                        self.color_dict.append(eye_color)
 
-                    tags.append([self.color.index(hair_color), self.color.index(eye_color)])
+                    tags.append([self.color_dict.index(hair_color), self.color_dict.index(eye_color)])
 
         outputs = np.array(tags)
         return outputs
@@ -63,12 +63,10 @@ class DataLoader:
         print("Transforming Tag Pairs into One Hot Encoded structure ........")
         one_hot_vecs = []
         for tag in inputs:
-            hair_vec = np.zeros(len(self.color))
-            hair_vec[tag[0]] = 1
-            eye_vec = np.zeros(len(self.color))
-            eye_vec[tag[1]] = 1
-            pair_vec = np.concatenate((hair_vec, eye_vec), axis=0)
-            one_hot_vecs.append(pair_vec)
+            color_id = len(self.color_dict) * tag[0] + tag[1]
+            vec = np.zeros(len(self.color_dict) ** 2)
+            vec[color_id] = 1
+            one_hot_vecs.append(vec)
 
         outputs = np.array(one_hot_vecs)
         return outputs
@@ -96,14 +94,17 @@ class DataLoader:
                self.tags[self.batch_iter * self.batch_size: (self.batch_iter + 1) * self.batch_size], \
                wrong_imgs, wrong_tags
 
+
     def create_testing_tags(self):
         print("Creating Testing Tags ........")
+
         for file in testing_tag_file:
             f = open(file, "w")
 
             counter = 1
+
             for i in range(self.sample_img_size):
-                tag = random.sample(self.color, 2)
+                tag = random.sample(self.color_dict, 2)
                 for _ in range(self.sample_img_size):
                     string = str(counter) + ',' + tag[0] + ' hair ' + tag[1] + ' eyes\n'
                     f.write(string)
