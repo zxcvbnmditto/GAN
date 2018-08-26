@@ -116,6 +116,8 @@ class DataLoader:
 
             f.close()
 
+def add_sample_noise(inputs):
+    return inputs + 0.5 * inputs.std() * np.random.random(inputs.shape)
 
 def immerge_save(images, epoch, img_size):
     images = np.array(images).squeeze()

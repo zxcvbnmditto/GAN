@@ -1,6 +1,60 @@
 import tensorflow as tf
 import ops
 
+def resblock1_G(inputs, filters, kernel_size, stride, training, norm, scope):
+    with tf.variable_scope(scope):
+        # if ops.scope_has_variables(scope):
+        #     print("test")
+        #     scope.reuse_variables()
+
+        outputs = ops.conv_2d(inputs, filters, kernel_size, stride, padding='SAME', stddev=0.02, norm=norm, training=training, scope="conv_1")
+        outputs = tf.nn.relu(outputs)
+        outputs = ops.conv_2d(outputs, filters, kernel_size, stride, padding='SAME', stddev=0.02, norm=norm, training=training, scope="conv_2")
+        outputs = outputs + inputs
+
+    return outputs
+
+def resblock2_G(inputs, filters, kernel_size, stride, scale, training, norm, scope):
+    with tf.variable_scope(scope):
+        # if ops.scope_has_variables(scope):
+        #     print("test")
+        #     scope.reuse_variables()
+
+        outputs = ops.conv_2d(inputs, filters, kernel_size, stride, padding='SAME', stddev=0.02, norm=norm, training=training, scope="conv")
+        outputs = ops.pixelShuffler(outputs, scale)
+        outputs = ops.batch_norm(outputs, training)
+        outputs = tf.nn.relu(outputs)
+
+    return outputs
+
+# the actual element wise sum resblock
+def resblock1_D(inputs, filters, kernel_size, stride, training, norm, collection, scope):
+    with tf.variable_scope(scope):
+        # if ops.scope_has_variables(scope):
+        #     print("test")
+        #     scope.reuse_variables()
+
+        outputs = ops.conv_2d(inputs, filters, kernel_size, stride, padding='SAME', stddev=0.02, norm=norm, training=training, collection=collection, scope='conv_1')
+        outputs = tf.nn.leaky_relu(outputs, alpha=0.2)
+        outputs = ops.conv_2d(outputs, filters, kernel_size, stride, padding='SAME', stddev=0.02, norm=norm, training=training, collection=collection, scope='conv_2')
+        outputs = outputs + inputs
+        outputs = tf.nn.leaky_relu(outputs, alpha=0.2)
+
+    return outputs
+
+# for sizing up
+def resblock2_D(inputs, filters, kernel_size, stride, training, norm, collection, scope):
+    with tf.variable_scope(scope):
+        # if ops.scope_has_variables(scope):
+        #     print("test")
+        #     scope.reuse_variables()
+
+        outputs = ops.conv_2d(inputs, filters, kernel_size, stride, padding='SAME', stddev=0.02, norm=norm, training=training, collection=collection, scope='conv')
+        outputs = tf.nn.leaky_relu(outputs, alpha=0.2)
+
+    return outputs
+
+
 class DRAGAN():
     def __init__(self, learning_rate, batch_size, latent_size, img_size, vocab_size, res_block_size):
         print("Constructing DRAGAN model ........")
@@ -10,49 +64,55 @@ class DRAGAN():
         self.img_size = img_size
         self.vocab_size = vocab_size
         self.res_block_size = res_block_size
-        self.Lambda = 5
-        self.correct_imgs = tf.placeholder(tf.float32, shape=[None, 64, 64, 3])
-        self.wrong_imgs = tf.placeholder(tf.float32, shape=[None, 64, 64, 3])
+        self.d_norm = "layer_norm"
+        self.g_norm = "batch_norm"
+        self.lambda_adv = self.vocab_size
+        self.lambda_gp = 5
+
+        self.c_imgs = tf.placeholder(tf.float32, shape=[None, 64, 64, 3])
+        self.p_imgs = tf.placeholder(tf.float32, shape=[None, 64, 64, 3])
+        self.r_imgs = tf.placeholder(tf.float32, shape=[None, 64, 64, 3])
         self.noise = tf.placeholder(tf.float32, shape=[None, self.latent_size])
-        self.correct_tags = tf.placeholder(tf.float32, shape=[None, self.vocab_size])
-        self.wrong_tags = tf.placeholder(tf.float32, shape=[None, self.vocab_size])
+        self.c_tags = tf.placeholder(tf.float32, shape=[None, self.vocab_size])
+        self.r_tags = tf.placeholder(tf.float32, shape=[None, self.vocab_size])
+
         self.training = tf.placeholder(tf.bool)
         self.build()
 
-    def discriminator(self, x, reuse=False):
+    def discriminator(self, x, reuse=False, collection=None):
         print("Discriminator ...........")
         with tf.variable_scope('discriminator') as scope:
             if (reuse):
                 scope.reuse_variables()
 
             inputs = x
-            outputs = ops.d_block_1(inputs, 32, 4, 2)
-            for _ in range(2):
-                outputs = ops.d_block_2(outputs, 32, 3, 1)
 
-            outputs = ops.d_block_1(outputs, 64, 4, 2)
-            for _ in range(4):
-                outputs = ops.d_block_2(outputs, 64, 3, 1)
+            outputs = resblock2_D(inputs, 32, 4, 2, self.training, self.d_norm, collection, scope='d_head_0')
+            for i in range(2):
+                outputs = resblock1_D(outputs, 32, 3, 1, self.training, self.d_norm, collection, scope='d_body_0_{:d}'.format(i))
 
-            outputs = ops.d_block_1(outputs, 128, 4, 2)
-            for _ in range(4):
-                outputs = ops.d_block_2(outputs, 128, 3, 1)
+            outputs = resblock2_D(outputs, 64, 4, 2, self.training, self.d_norm, collection, scope='d_head_1')
+            for i in range(4):
+                outputs = resblock1_D(outputs, 64, 3, 1, self.training, self.d_norm, collection, scope='d_body_1_{:d}'.format(i))
 
-            outputs = ops.d_block_1(outputs, 256, 4, 2)
-            for _ in range(4):
-                outputs = ops.d_block_2(outputs, 256, 3, 1)
+            outputs = resblock2_D(outputs, 128, 4, 2, self.training, self.d_norm, collection, scope='d_head_2')
+            for i in range(4):
+                outputs = resblock1_D(outputs, 128, 3, 1, self.training, self.d_norm, collection, scope='d_body_2_{:d}'.format(i))
 
-            # outputs = ops.d_block_1(outputs, 512, 4, 2)
-            # for _ in range(4):
-            #     outputs = ops.d_block_2(outputs, 512, 3, 1)
+            outputs = resblock2_D(outputs, 256, 4, 2, self.training, self.d_norm, collection, scope='d_head_3')
+            for i in range(4):
+                outputs = resblock1_D(outputs, 256, 3, 1, self.training, self.d_norm, collection, scope='d_body_3_{:d}'.format(i))
 
-            outputs = ops.d_block_1(outputs, 512, 4, 2)
-            outputs = tf.reshape(outputs, [-1, 2*2*512])
+            outputs = resblock2_D(outputs, 512, 4, 2, self.training, self.d_norm, collection, scope='d_head_4')
+            for i in range(4):
+                outputs = resblock1_D(outputs, 512, 3, 1, self.training, self.d_norm, collection, scope='d_body_4_{:d}'.format(i))
 
-            logits = tf.layers.dense(outputs, 1, trainable=True)
-            labels = tf.layers.dense(outputs, units=self.vocab_size, trainable=True)
+            outputs = resblock2_D(outputs, 1024, 4, 2, self.training, self.d_norm, collection, scope='d_head_5')
+            outputs = tf.reshape(outputs, [-1, 1 * 1 * 1024])
 
+            logits = ops.dense(outputs, 1, 0.02, self.training, None, collection, scope="d_logits")
 
+            labels = ops.dense(outputs, self.vocab_size, 0.02, self.training, None, collection, scope="d_labels")
 
         return logits, labels
 
@@ -66,64 +126,83 @@ class DRAGAN():
             inputs = tf.concat([x, c], axis=-1)
 
             # Dense layer 1
-            dense1 = tf.layers.dense(inputs, units=64*8*8, trainable=True)
-            dense1 = tf.contrib.layers.batch_norm(dense1, decay=0.9, epsilon=1e-5, scale=True, is_training=self.training, trainable=True)
+            dense1 = ops.dense(inputs, 64*8*8, 0.02, self.training, norm=self.g_norm, scope="g_inputs")
             dense1 = tf.nn.relu(dense1)
             dense1 = tf.reshape(dense1, [-1, 8, 8, 64])
 
             outputs = dense1
+            # Res Block
             for i in range(self.res_block_size):
-                outputs = ops.g_res_block(outputs, 64, 3, 1, self.training)
+                outputs = resblock1_G(outputs, 64, 3, 1, self.training, norm=self.g_norm, scope='g_residual_{:d}'.format(i))
 
-            outputs = tf.contrib.layers.batch_norm(outputs, decay=0.9, epsilon=1e-5, scale=True, is_training=self.training, trainable=True)
+            outputs = ops.batch_norm(outputs, self.training)
             outputs = tf.nn.relu(outputs)
             outputs = outputs + dense1
 
+            # Upscaling by pixel shuffling
             for i in range(3):
-                outputs = tf.layers.conv2d(outputs, filters=256, kernel_size=3, strides=1, padding='same')
-                outputs = ops.pixelShuffler(outputs, 2)
-                outputs = tf.contrib.layers.batch_norm(outputs, decay=0.9, epsilon=1e-5, scale=True, is_training=self.training, trainable=True)
-                outputs = tf.nn.relu(outputs)
+                outputs = resblock2_G(outputs, 256, 3, 1, 2, self.training, norm=None, scope='g_upscale_{:d}'.format(i))
 
-            outputs = tf.layers.conv2d(outputs, filters=3, kernel_size=9, strides=1)
+            outputs = ops.conv_2d(outputs, 3, 9, 1, padding='SAME', stddev=0.02, training=self.training, norm=None, scope="g_conv_last")
             outputs = tf.nn.tanh(outputs)
 
         return outputs
 
     def build(self):
-        self.fake_imgs = self.generator(self.noise, self.correct_tags, reuse=False)
+        self.fake_imgs = self.generator(self.noise, self.c_tags, reuse=False)
+        self.wrong_imgs = self.generator(self.noise, self.r_tags, reuse=True)
 
-        self.c_logits, self.c_labels = self.discriminator(self.correct_imgs, reuse=False)
-        self.f_logits, self.f_labels = self.discriminator(self.fake_imgs, reuse=True)
-        self.w_logits, self.w_labels = self.discriminator(self.wrong_imgs, reuse=True)
+
+        self.c_logits, self.c_labels = self.discriminator(self.c_imgs, reuse=False, collection=None)
+        self.f_logits, self.f_labels = self.discriminator(self.fake_imgs, reuse=True, collection='NO_OPS')
+        self.w_logits, self.w_labels = self.discriminator(self.wrong_imgs, reuse=True, collection='NO_OPS')
+        # self.p_logits, self.p_labels = self.discriminator(self.p_imgs, reuse=True)
 
         # DRAGAN
         self.g_fake = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.f_logits, labels=tf.ones_like(self.f_logits)))
 
-        self.d_real = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.c_logits, labels=tf.ones_like(self.c_logits)))
-        self.d_fake = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.f_logits, labels=tf.zeros_like(self.f_logits)))
-        self.d_wrong = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.w_logits, labels=tf.zeros_like(self.w_logits)))
+        # Logit Loss
+        self.l_real = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.c_logits, labels=tf.ones_like(self.c_logits)))
+        self.l_fake = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.f_logits, labels=tf.zeros_like(self.f_logits)))
+        self.l_wrong = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.w_logits, labels=tf.zeros_like(self.w_logits)))
+        # self.l_perturb = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.p_logits, labels=tf.zeros_like(self.p_logits)))
 
-        self.c_real = tf.reduce_mean(tf.reduce_sum(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.c_labels, labels=self.correct_tags)))
-        self.c_fake = tf.reduce_mean(tf.reduce_sum(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.f_labels, labels=self.correct_tags)))
-        self.c_wrong = tf.reduce_mean(tf.reduce_sum(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.w_labels, labels=self.wrong_tags)))
+        # Label Loss
+        self.c_real = tf.reduce_mean(tf.reduce_sum(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.c_labels, labels=self.c_tags), axis=1))
+        self.c_fake = tf.reduce_mean(tf.reduce_sum(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.f_labels, labels=self.c_tags), axis=1))
+        self.c_wrong = tf.reduce_mean(tf.reduce_sum(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.w_labels, labels=self.r_tags), axis=1))
+        # self.c_perturb = tf.reduce_mean(tf.reduce_sum(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.p_labels, labels=self.c_tags), axis=1))
 
-        self.g_loss = self.Lambda*self.g_fake + self.c_fake
-        self.d_loss = self.Lambda*self.d_real + self.c_real + self.Lambda*self.d_wrong
-        # self.d_loss = self.Lambda*self.d_real + self.c_real + self.Lambda*self.d_wrong + self.c_wrong
+        # Penalty Loss
+        penalty_dist = tf.random_uniform(shape=[self.batch_size, 1], minval=0, maxval=1)
+        differences = self.wrong_imgs - self.c_imgs
+        interpolates = self.c_imgs + penalty_dist * differences
+        interpolates_logits, _ = self.discriminator(interpolates, reuse=True)
+        grads = tf.gradients(interpolates_logits, [interpolates])[0]
+        slopes = tf.sqrt(tf.reduce_sum(tf.square(grads), reduction_indices=[1]))
+        self.gradient_penalty = tf.reduce_mean((slopes - 1) ** 2)
 
-        # self.c_loss = self.c_real + self.c_fake
+        self.g_loss = self.lambda_adv*self.g_fake + self.c_fake
+        self.d_loss = self.lambda_adv*self.l_real + self.lambda_adv*self.l_wrong + self.c_real + self.lambda_gp*self.gradient_penalty
 
         self.d_sumop = tf.summary.scalar('d_loss', self.d_loss)
         self.g_sumop = tf.summary.scalar('g_loss', self.g_loss)
-        # self.c_sumop = tf.summary.scalar('c_loss', self.c_loss)
+        self.lr_sumop = tf.summary.scalar('l_real', self.l_real)
+        self.lw_sumop = tf.summary.scalar('l_wrong', self.l_wrong)
+        self.cr_sumop = tf.summary.scalar('c_real', self.c_real)
+        self.gf_sumop = tf.summary.scalar('g_fake', self.g_fake)
+        self.cf_sumop = tf.summary.scalar('c_fake', self.c_fake)
+
 
         d_vars = [var for var in tf.trainable_variables() if 'discriminator' in var.name]
         g_vars = [var for var in tf.trainable_variables() if 'generator' in var.name]
-        # c_vars = [var for var in tf.trainable_variables() if 'classifier' in var.name or 'discriminator' in var.name or 'generator' in var.name]
-
-        # contains the moving_mean and moving_variance, which are not in g_vars
         update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+
+        # print(d_vars)
+        # print(d_vars_test)
+        # print(d_vars)
+        # print(g_vars)
+        # print(update_ops)
 
         # update update_ops before processing the D/G trainer
         with tf.control_dependencies(update_ops):
@@ -132,9 +211,6 @@ class DRAGAN():
 
             self.trainerD = tf.train.AdamOptimizer(learning_rate=self.learning_rate, beta1=0.5, beta2=0.9).minimize(
                 self.d_loss, var_list=d_vars)
-
-            # self.trainerC = tf.train.AdamOptimizer(learning_rate=self.learning_rate, beta1=0.5, beta2=0.9).minimize(
-            #     self.c_loss, var_list=c_vars)
 
         self.saver = tf.train.Saver(tf.global_variables())
 

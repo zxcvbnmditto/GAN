@@ -125,15 +125,30 @@ class CGAN():
         self.case4 = self.discriminator(self.correct_imgs, self.wrong_tags, reuse=True)
 
         # dcgan
-        self.g_loss = tf.reduce_mean(
-            tf.nn.sigmoid_cross_entropy_with_logits(logits=self.case3, labels=tf.ones_like(self.case3)))
+        # self.g_loss = tf.reduce_mean(
+        #     tf.nn.sigmoid_cross_entropy_with_logits(logits=self.case3, labels=tf.ones_like(self.case3)))
+        #
+        # self.d_loss = tf.reduce_mean(
+        #     tf.nn.sigmoid_cross_entropy_with_logits(logits=self.case1, labels=tf.ones_like(self.case1)) +
+        #     tf.nn.sigmoid_cross_entropy_with_logits(logits=self.case2, labels=tf.zeros_like(self.case2)) +
+        #     tf.nn.sigmoid_cross_entropy_with_logits(logits=self.case3, labels=tf.zeros_like(self.case3)) +
+        #     tf.nn.sigmoid_cross_entropy_with_logits(logits=self.case4, labels=tf.zeros_like(self.case4))
+        # )
 
-        self.d_loss = tf.reduce_mean(
-            tf.nn.sigmoid_cross_entropy_with_logits(logits=self.case1, labels=tf.ones_like(self.case1)) +
-            tf.nn.sigmoid_cross_entropy_with_logits(logits=self.case2, labels=tf.zeros_like(self.case2)) +
-            tf.nn.sigmoid_cross_entropy_with_logits(logits=self.case3, labels=tf.zeros_like(self.case3)) +
-            tf.nn.sigmoid_cross_entropy_with_logits(logits=self.case4, labels=tf.zeros_like(self.case4))
-        )
+        # wgan-gp
+        penalty_dist = tf.random_uniform(shape=[self.batch_size, 1], minval=0, maxval=1)
+
+        # Get gradient_penalty
+        differences = self.fake_imgs - self.correct_imgs
+        interpolates = self.correct_imgs + penalty_dist * differences
+        interpolates_logits = self.discriminator(interpolates, reuse=True)
+        grads = tf.gradients(interpolates_logits, [interpolates])[0]
+        slopes = tf.sqrt(tf.reduce_sum(tf.square(grads), reduction_indices=[1]))
+        self.gradient_penalty = tf.reduce_mean((slopes - 1) ** 2)
+
+        self.g_loss = tf.reduce_mean(self.case3)
+        self.d_loss = tf.reduce_mean(self.case3) - tf.reduce_mean(self.case4) + self.Lambda * self.gradient_penalty
+
 
         self.d_sumop = tf.summary.scalar('d_loss', self.d_loss)
         self.g_sumop = tf.summary.scalar('g_loss', self.g_loss)
