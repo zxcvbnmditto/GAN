@@ -5,7 +5,7 @@ import os
 from skimage import io
 from scipy import misc
 
-data_dirs = ['../faces/64-64/', '../faces/extra/']
+data_dirs = ['../../faces/64-64/', '../../faces/extra/']
 
 class DataLoader:
     def __init__(self, batch_size):

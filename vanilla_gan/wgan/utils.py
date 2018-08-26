@@ -8,7 +8,7 @@ import tensorflow as tf
 from skimage import io
 from scipy import misc
 
-data_dir = '../faces/64-64/'
+data_dir = '../../faces/64-64/'
 
 class DataLoader:
     def __init__(self, batch_size):
