@@ -6,8 +6,8 @@ import os
 from dragan import DRAGAN
 
 # Define Global params
-tf.app.flags.DEFINE_integer('start_epoch', 7000, 'Number of epoch to start running')
-tf.app.flags.DEFINE_integer('epochs', 75000, 'Number of epochs to run')
+tf.app.flags.DEFINE_integer('start_epoch', 11700, 'Number of epoch to start running')
+tf.app.flags.DEFINE_integer('epochs', 50000, 'Number of epochs to run')
 tf.app.flags.DEFINE_integer('d_iter', 1, 'Number of iterations training discriminator per epoch')
 tf.app.flags.DEFINE_integer('g_iter', 1, 'Number of iterations training generator per epoch')
 tf.app.flags.DEFINE_integer('step_per_checkpoints', 100, 'Number of steps to save a ckpt')
