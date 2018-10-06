@@ -20,13 +20,13 @@ You will have to created the tfrecord file using the raw data, including images 
 python3 main.py
 ```
 
-### Results
+###Results
+
 ####Unconditional Gan
 ![img1](vanilla_gan/sample_imgs/anime/train/wgan_gp_1.jpg)
 ![gif1](vanilla_gan/sample_imgs/anime/train/wgan_gp.gif)
 ![img2](vanilla_gan/sample_imgs/celeb/train/wgan_gp_1.jpg)
 ![gif2](vanilla_gan/sample_imgs/celeb/train/wgan_gp.gif)
-
 
 ####Conditional 
 ![img3](cgan/sample_imgs/anime/train/dragan_1.jpg)
