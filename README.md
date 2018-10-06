@@ -23,17 +23,20 @@ python3 main.py
 ###Results
 
 ####Unconditional Gan
+
 ![img1](vanilla_gan/sample_imgs/anime/train/wgan_gp_1.jpg)
 ![gif1](vanilla_gan/sample_imgs/anime/train/wgan_gp.gif)
 ![img2](vanilla_gan/sample_imgs/celeb/train/wgan_gp_1.jpg)
 ![gif2](vanilla_gan/sample_imgs/celeb/train/wgan_gp.gif)
 
 ####Conditional 
+
 ![img3](cgan/sample_imgs/anime/train/dragan_1.jpg)
 ![gif3](cgan/sample_imgs/anime/train/dragan.gif)
 
 
 ####Style Transfer
+
 Will be here soon
 
 ### Other
