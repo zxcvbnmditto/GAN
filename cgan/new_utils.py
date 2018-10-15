@@ -89,11 +89,18 @@ def add_sample_noise(inputs):
 
 def sample_tags(hair_dict, eye_dict):
     tags = []
-    for i in range(len(hair_dict)):
-        for j in range(len(eye_dict)):
-            tag = np.zeros(len(hair_dict) + len(eye_dict))
+    # for i in range(len(hair_dict)):
+    #     for j in range(len(eye_dict)):
+    #         tag = np.zeros(len(hair_dict) + len(eye_dict))
+    #         tag[i] = 1
+    #         tag[len(hair_dict) + j] = 1
+    #         tags.append(tag)
+
+    for i in range(len(eye_dict)):
+        for j in range(len(hair_dict)):
+            tag = np.zeros(len(eye_dict) + len(hair_dict))
             tag[i] = 1
-            tag[len(hair_dict) + j] = 1
+            tag[len(eye_dict) + j] = 1
             tags.append(tag)
 
     return np.array(tags)

@@ -9,16 +9,16 @@ import new_utils
 
 # Define Global params
 # Customize these once for each dataset
-# tf.app.flags.DEFINE_string('model_dir', '/media/james/D/Datasets/anime_character/dragan/models/first', 'Path to save model')
-# tf.app.flags.DEFINE_string('logs_dir', '/media/james/D/Datasets/anime_character/dragan/logs/first', 'Path to save tensorboard logging')
-# tf.app.flags.DEFINE_string('img_dir', '/media/james/D/Datasets/anime_character/dragan/sample_imgs/first', 'Path to save images')
-# tf.app.flags.DEFINE_string('tfrecords_dir', '/media/james/D/Datasets/anime_character/tfrecords', 'Path to the tfrecord file')
-# tf.app.flags.DEFINE_string('rawdata_dir', '/media/james/D/Datasets/anime_character/raw_data/extra', 'Path to the raw images')
-# tf.app.flags.DEFINE_string('tags_dir', '/media/james/D/Datasets/anime_character/raw_data/tags', 'Path to save images')
+tf.app.flags.DEFINE_string('model_dir', '/media/james/D/Datasets/anime_character/dragan/models/sixth', 'Path to save model')
+tf.app.flags.DEFINE_string('logs_dir', '/media/james/D/Datasets/anime_character/dragan/logs/sixth', 'Path to save tensorboard logging')
+tf.app.flags.DEFINE_string('img_dir', '/media/james/D/Datasets/anime_character/dragan/sample_imgs/sixth', 'Path to save images')
+tf.app.flags.DEFINE_string('tfrecords_dir', '/media/james/D/Datasets/anime_character/tfrecords', 'Path to the tfrecord file')
+tf.app.flags.DEFINE_string('rawdata_dir', '/media/james/D/Datasets/anime_character/raw_data/extra', 'Path to the raw images')
+tf.app.flags.DEFINE_string('tags_dir', '/media/james/D/Datasets/anime_character/raw_data/tags', 'Path to save images')
 #
-# tf.app.flags.DEFINE_string('checkpoint_filename', 'wgan-gp.ckpt', 'Checkpoint filename')
-# tf.app.flags.DEFINE_string('tfrecords_filename', 'anime_character_with_tags.tfrecords', 'Tfrecords filename')
-# tf.app.flags.DEFINE_string('tags_filename', 'one_hot_tags.csv', 'Tags filename')
+tf.app.flags.DEFINE_string('checkpoint_filename', 'dragan.ckpt', 'Checkpoint filename')
+tf.app.flags.DEFINE_string('tfrecords_filename', 'anime_character_with_tags.tfrecords', 'Tfrecords filename')
+tf.app.flags.DEFINE_string('tags_filename', 'one_hot_tags.csv', 'Tags filename')
 
 # Will be implemented support for celeb dataset soon
 
@@ -36,12 +36,12 @@ tf.app.flags.DEFINE_integer('feature_length', 22, 'Length of Features')
 tf.app.flags.DEFINE_integer('fixed_batch_size', 64, 'Size of batch')
 tf.app.flags.DEFINE_integer('latent_size', 100, 'Size of latent/random noise')
 tf.app.flags.DEFINE_integer('sample_img_size', 120, 'Generate a testing image which is a combination of sample_img_size**2 imgs')
-tf.app.flags.DEFINE_integer('d_iters', 5, 'Discrimintor iteration count per epoch')
+tf.app.flags.DEFINE_integer('d_iters', 3, 'Discrimintor iteration count per epoch')
 tf.app.flags.DEFINE_integer('g_iters', 1, 'Generator iteration count per epoch')
 tf.app.flags.DEFINE_integer('capacity', 7000, 'Capacity of the buffer')
 tf.app.flags.DEFINE_integer('num_threads', 12, 'Number of threads to use')
 tf.app.flags.DEFINE_integer('min_after_dequeue', 2000, 'Minium after dequeue')
-tf.app.flags.DEFINE_integer('res_block_size', 12, 'Size of resblock in generator')
+tf.app.flags.DEFINE_integer('res_block_size', 10, 'Size of resblock in generator')
 
 
 # Check everytime before running
@@ -114,7 +114,8 @@ def train(config):
                              model.c_tags: f_batch,
                              model.training: True,
                              model.d_lr: FLAGS.d_lr}
-                _, summary_d, summary_p, d_loss = sess.run([model.trainerD, model.d_sumop, model.p_sumop, model.d_loss],
+                _, summary_d, summary_p, d_loss, c_real, c_fake, l_real, l_fake = sess.run(
+                    [model.trainerD, model.d_sumop, model.p_sumop, model.d_loss, model.c_real, model.c_fake, model.l_real, model.l_fake],
                                                    feed_dict=feed_dict)
 
             # Update the generator
@@ -129,6 +130,9 @@ def train(config):
 
             # Save Summaries
             print('Epoch: {:d} D_Loss: {:f} G_Loss: {:f} Time: {:.3f}'.format(epoch, d_loss, g_loss, time.time()-start_time))
+            print("L_real: {} C_real: {}".format(l_real, c_real.sum()))
+            print("L_fake: {} C_fake: {}".format(l_fake, c_fake.sum()))
+
             summary_writer.add_summary(summary_d, epoch)
             summary_writer.add_summary(summary_p, epoch)
             summary_writer.add_summary(summary_g, epoch)
@@ -168,8 +172,9 @@ def test(config):
         if not os.path.isdir(path_dir): os.makedirs(path_dir)
 
         # Create arbitrary number (100) of sample_images
-        for num in range(100):
-            sampled_noise = np.random.normal(-1, 1, size=[FLAGS.sample_img_size, FLAGS.latent_size])
+        for num in range(10):
+            sampled_noise = np.random.normal(-1, 1, size=[FLAGS.latent_size])
+            sampled_noise = np.tile(sampled_noise, [FLAGS.sample_img_size, 1])
 
             feed_dict = {model.noise: sampled_noise,
                          model.c_tags: fixed_tags_batch,
