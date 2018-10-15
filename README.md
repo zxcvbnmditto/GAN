@@ -31,8 +31,7 @@ python3 main.py
 
 #### Conditional 
 
-![img3](cgan/sample_imgs/anime/train/dragan_1.jpg)
-![gif3](cgan/sample_imgs/anime/train/dragan.gif)
+![img3](cgan/sample_imgs/anime/test/dragan_1.jpg)
 
 
 #### Style Transfer
