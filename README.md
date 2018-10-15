@@ -36,7 +36,8 @@ python3 main.py
 
 #### Style Transfer
 
-Will be here soon
+![img4](style_transfer/stargan/sample_imgs/anime/test/stargan_1.jpg)
+
 
 ### Other
 1. Unconditional Gan is based on wgan-gp; however, it seems like there's still some issue about mode collapse or dead pixels
